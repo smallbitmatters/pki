@@ -95,7 +95,6 @@ class ACMECreateCLI(pki.cli.CLI):
             self.print_help()
             sys.exit(1)
 
-        name = 'acme'
         instance_name = 'pki-tomcat'
         force = False
 
@@ -121,13 +120,11 @@ class ACMECreateCLI(pki.cli.CLI):
                 self.print_help()
                 sys.exit(1)
 
-        if len(args) > 0:
-            name = args[0]
-
+        name = args[0] if len(args) > 0 else 'acme'
         instance = pki.server.instance.PKIServerFactory.create(instance_name)
 
         if not instance.exists():
-            raise Exception('Invalid instance: %s' % instance_name)
+            raise Exception(f'Invalid instance: {instance_name}')
 
         instance.load()
 
@@ -177,7 +174,6 @@ class ACMERemoveCLI(pki.cli.CLI):
             self.print_help()
             sys.exit(1)
 
-        name = 'acme'
         instance_name = 'pki-tomcat'
         force = False
 
@@ -203,13 +199,11 @@ class ACMERemoveCLI(pki.cli.CLI):
                 self.print_help()
                 sys.exit(1)
 
-        if len(args) > 0:
-            name = args[0]
-
+        name = args[0] if len(args) > 0 else 'acme'
         instance = pki.server.instance.PKIServerFactory.create(instance_name)
 
         if not instance.exists():
-            raise Exception('Invalid instance: %s' % instance_name)
+            raise Exception(f'Invalid instance: {instance_name}')
 
         instance.load()
 
@@ -248,7 +242,6 @@ class ACMEDeployCLI(pki.cli.CLI):
             self.print_help()
             sys.exit(1)
 
-        name = 'acme'
         instance_name = 'pki-tomcat'
         wait = False
         max_wait = 60
@@ -282,13 +275,11 @@ class ACMEDeployCLI(pki.cli.CLI):
                 self.print_help()
                 sys.exit(1)
 
-        if len(args) > 0:
-            name = args[0]
-
+        name = args[0] if len(args) > 0 else 'acme'
         instance = pki.server.instance.PKIServerFactory.create(instance_name)
 
         if not instance.exists():
-            raise Exception('Invalid instance: %s' % instance_name)
+            raise Exception(f'Invalid instance: {instance_name}')
 
         instance.load()
 
@@ -337,7 +328,6 @@ class ACMEUndeployCLI(pki.cli.CLI):
             self.print_help()
             sys.exit(1)
 
-        name = 'acme'
         instance_name = 'pki-tomcat'
         wait = False
         max_wait = 60
@@ -371,13 +361,11 @@ class ACMEUndeployCLI(pki.cli.CLI):
                 self.print_help()
                 sys.exit(1)
 
-        if len(args) > 0:
-            name = args[0]
-
+        name = args[0] if len(args) > 0 else 'acme'
         instance = pki.server.instance.PKIServerFactory.create(instance_name)
 
         if not instance.exists():
-            raise Exception('Invalid instance: %s' % instance_name)
+            raise Exception(f'Invalid instance: {instance_name}')
 
         instance.load()
 
@@ -448,7 +436,7 @@ class ACMEMetadataShowCLI(pki.cli.CLI):
         instance = pki.server.instance.PKIServerFactory.create(instance_name)
 
         if not instance.exists():
-            raise Exception('Invalid instance: %s' % instance_name)
+            raise Exception(f'Invalid instance: {instance_name}')
 
         instance.load()
 
@@ -456,29 +444,25 @@ class ACMEMetadataShowCLI(pki.cli.CLI):
         metadata_conf = os.path.join(acme_conf_dir, 'metadata.conf')
         config = {}
 
-        if not os.path.exists(metadata_conf):
-            source = '/usr/share/pki/acme/conf/metadata.conf'
-        else:
-            source = metadata_conf
-
+        source = (
+            metadata_conf
+            if os.path.exists(metadata_conf)
+            else '/usr/share/pki/acme/conf/metadata.conf'
+        )
         logger.info('Loading %s', source)
         pki.util.load_properties(source, config)
 
-        terms_of_service = config.get('termsOfService')
-        if terms_of_service:
-            print('  Terms of Service: %s' % terms_of_service)
+        if terms_of_service := config.get('termsOfService'):
+            print(f'  Terms of Service: {terms_of_service}')
 
-        website = config.get('website')
-        if website:
-            print('  Website: %s' % website)
+        if website := config.get('website'):
+            print(f'  Website: {website}')
 
-        caa_identities = config.get('caaIdentities')
-        if caa_identities:
-            print('  CAA Identities: %s' % caa_identities)
+        if caa_identities := config.get('caaIdentities'):
+            print(f'  CAA Identities: {caa_identities}')
 
-        external_account_required = config.get('externalAccountRequired')
-        if external_account_required:
-            print('  External Account Required: %s' % external_account_required)
+        if external_account_required := config.get('externalAccountRequired'):
+            print(f'  External Account Required: {external_account_required}')
 
 
 class ACMEMetadataModifyCLI(pki.cli.CLI):
@@ -531,7 +515,7 @@ class ACMEMetadataModifyCLI(pki.cli.CLI):
         instance = pki.server.instance.PKIServerFactory.create(instance_name)
 
         if not instance.exists():
-            raise Exception('Invalid instance: %s' % instance_name)
+            raise Exception(f'Invalid instance: {instance_name}')
 
         instance.load()
 
@@ -539,11 +523,11 @@ class ACMEMetadataModifyCLI(pki.cli.CLI):
         metadata_conf = os.path.join(acme_conf_dir, 'metadata.conf')
         config = {}
 
-        if not os.path.exists(metadata_conf):
-            source = '/usr/share/pki/acme/conf/metadata.conf'
-        else:
-            source = metadata_conf
-
+        source = (
+            metadata_conf
+            if os.path.exists(metadata_conf)
+            else '/usr/share/pki/acme/conf/metadata.conf'
+        )
         logger.info('Loading %s', source)
         pki.util.load_properties(source, config)
 
@@ -639,7 +623,7 @@ class ACMEDatabaseShowCLI(pki.cli.CLI):
         instance = pki.server.instance.PKIServerFactory.create(instance_name)
 
         if not instance.exists():
-            raise Exception('Invalid instance: %s' % instance_name)
+            raise Exception(f'Invalid instance: {instance_name}')
 
         instance.load()
 
@@ -653,33 +637,29 @@ class ACMEDatabaseShowCLI(pki.cli.CLI):
         database_class = config.get('class')
 
         database_type = DATABASE_TYPES.get(database_class)
-        print('  Database Type: %s' % database_type)
+        print(f'  Database Type: {database_type}')
 
         if database_type in ['ds', 'ldap', 'openldap']:
 
-            url = config.get('url')
-            if url:
-                print('  Server URL: %s' % url)
+            if url := config.get('url'):
+                print(f'  Server URL: {url}')
 
             auth_type = config.get('authType')
             if auth_type:
-                print('  Authentication Type: %s' % auth_type)
+                print(f'  Authentication Type: {auth_type}')
 
             if auth_type == 'BasicAuth':
 
-                bind_dn = config.get('bindDN')
-                if bind_dn:
-                    print('  Bind DN: %s' % bind_dn)
+                if bind_dn := config.get('bindDN'):
+                    print(f'  Bind DN: {bind_dn}')
 
-                password = config.get('bindPassword')
-                if password:
+                if password := config.get('bindPassword'):
                     print('  Bind Password: ********')
 
             elif auth_type == 'SslClientAuth':
 
-                nickname = config.get('nickname')
-                if nickname:
-                    print('  Client Certificate: %s' % nickname)
+                if nickname := config.get('nickname'):
+                    print(f'  Client Certificate: {nickname}')
 
             base_dn = config.get('basedn')
             if base_dn:
@@ -688,20 +668,17 @@ class ACMEDatabaseShowCLI(pki.cli.CLI):
                 base_dn = config.get('baseDN')
 
             if base_dn:
-                print('  Base DN: %s' % base_dn)
+                print(f'  Base DN: {base_dn}')
 
         elif database_type == 'postgresql':
 
-            url = config.get('url')
-            if url:
-                print('  Server URL: %s' % url)
+            if url := config.get('url'):
+                print(f'  Server URL: {url}')
 
-            username = config.get('user')
-            if username:
-                print('  Username: %s' % username)
+            if username := config.get('user'):
+                print(f'  Username: {username}')
 
-            password = config.get('password')
-            if password:
+            if password := config.get('password'):
                 print('  Password: ********')
 
 
@@ -734,10 +711,10 @@ class ACMEDatabaseModifyCLI(pki.cli.CLI):
             self.print_help()
             sys.exit(1)
 
-        instance_name = 'pki-tomcat'
         database_type = None
         props = {}
 
+        instance_name = 'pki-tomcat'
         for o, a in opts:
             if o in ('-i', '--instance'):
                 instance_name = a
@@ -771,7 +748,7 @@ class ACMEDatabaseModifyCLI(pki.cli.CLI):
         instance = pki.server.instance.PKIServerFactory.create(instance_name)
 
         if not instance.exists():
-            raise Exception('Invalid instance: %s' % instance_name)
+            raise Exception(f'Invalid instance: {instance_name}')
 
         instance.load()
 
@@ -811,8 +788,8 @@ class ACMEDatabaseModifyCLI(pki.cli.CLI):
 
         print()
         print(
-            'Enter the type of the database. '
-            'Available types: %s.' % ', '.join(DATABASE_TYPES.values()))
+            f"Enter the type of the database. Available types: {', '.join(DATABASE_TYPES.values())}."
+        )
         database_type = DATABASE_TYPES.get(database_class)
         orig_database_type = database_type
 
@@ -975,7 +952,7 @@ class ACMEIssuerShowCLI(pki.cli.CLI):
         instance = pki.server.instance.PKIServerFactory.create(instance_name)
 
         if not instance.exists():
-            raise Exception('Invalid instance: %s' % instance_name)
+            raise Exception(f'Invalid instance: {instance_name}')
 
         instance.load()
 
@@ -989,43 +966,35 @@ class ACMEIssuerShowCLI(pki.cli.CLI):
         issuer_class = config.get('class')
 
         issuer_type = ISSUER_TYPES.get(issuer_class)
-        print('  Issuer Type: %s' % issuer_type)
+        print(f'  Issuer Type: {issuer_type}')
 
         if issuer_type == 'nss':
 
-            nickname = config.get('nickname')
-            if nickname:
-                print('  Signing Certificate: %s' % nickname)
+            if nickname := config.get('nickname'):
+                print(f'  Signing Certificate: {nickname}')
 
-            extensions = config.get('extensions')
-            if extensions:
-                print('  Certificate Extensions: %s' % extensions)
+            if extensions := config.get('extensions'):
+                print(f'  Certificate Extensions: {extensions}')
 
         elif issuer_type == 'pki':
 
-            url = config.get('url')
-            if url:
-                print('  Server URL: %s' % url)
+            if url := config.get('url'):
+                print(f'  Server URL: {url}')
 
-            nickname = config.get('nickname')
-            if nickname:
-                print('  Client Certificate: %s' % nickname)
+            if nickname := config.get('nickname'):
+                print(f'  Client Certificate: {nickname}')
 
-            username = config.get('username')
-            if username:
-                print('  Agent Username: %s' % username)
+            if username := config.get('username'):
+                print(f'  Agent Username: {username}')
 
-            password = config.get('password')
-            if password:
+            if password := config.get('password'):
                 print('  Agent Password: ********')
 
-            password_file = config.get('passwordFile')
-            if password_file:
-                print('  Password file: %s' % password_file)
+            if password_file := config.get('passwordFile'):
+                print(f'  Password file: {password_file}')
 
-            profile = config.get('profile')
-            if profile:
-                print('  Certificate Profile: %s' % profile)
+            if profile := config.get('profile'):
+                print(f'  Certificate Profile: {profile}')
 
 
 class ACMEIssuerModifyCLI(pki.cli.CLI):

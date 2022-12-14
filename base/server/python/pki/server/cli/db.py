@@ -195,7 +195,7 @@ class DBUpgradeCLI(pki.cli.CLI):
         # upgrade all subsystems
         for subsystem in instance.get_subsystems():
 
-            cmd = [subsystem.name + '-db-upgrade']
+            cmd = [f'{subsystem.name}-db-upgrade']
 
             if verbose:
                 cmd.append('--verbose')
@@ -208,7 +208,7 @@ class DBUpgradeCLI(pki.cli.CLI):
 class SubsystemDBCLI(pki.cli.CLI):
 
     def __init__(self, parent):
-        super().__init__('db', '%s database management commands' % parent.name.upper())
+        super().__init__('db', f'{parent.name.upper()} database management commands')
 
         self.parent = parent
         self.add_module(SubsystemDBConfigCLI(self))
@@ -226,42 +226,42 @@ class SubsystemDBCLI(pki.cli.CLI):
         name = 'internaldb.%s'
 
         hostname = subsystem.config.get(name % 'ldapconn.host')
-        print('  Hostname: %s' % hostname)
+        print(f'  Hostname: {hostname}')
 
         port = subsystem.config.get(name % 'ldapconn.port')
-        print('  Port: %s' % port)
+        print(f'  Port: {port}')
 
         secure = subsystem.config.get(name % 'ldapconn.secureConn')
-        print('  Secure: %s' % secure)
+        print(f'  Secure: {secure}')
 
         auth = subsystem.config.get(name % 'ldapauth.authtype')
-        print('  Authentication: %s' % auth)
+        print(f'  Authentication: {auth}')
 
         if auth == 'BasicAuth':
             bindDN = subsystem.config.get(name % 'ldapauth.bindDN')
-            print('  Bind DN: %s' % bindDN)
+            print(f'  Bind DN: {bindDN}')
 
             bindPWPrompt = subsystem.config.get(name % 'ldapauth.bindPWPrompt')
-            print('  Bind Password Prompt: %s' % bindPWPrompt)
+            print(f'  Bind Password Prompt: {bindPWPrompt}')
 
         if auth == 'SslClientAuth':
             nickname = subsystem.config.get(name % 'ldapauth.clientCertNickname')
-            print('  Client Certificate: %s' % nickname)
+            print(f'  Client Certificate: {nickname}')
 
         database = subsystem.config.get(name % 'database')
-        print('  Database: %s' % database)
+        print(f'  Database: {database}')
 
         baseDN = subsystem.config.get(name % 'basedn')
-        print('  Base DN: %s' % baseDN)
+        print(f'  Base DN: {baseDN}')
 
         multipleSuffix = subsystem.config.get(name % 'multipleSuffix.enable')
-        print('  Multiple suffix: %s' % multipleSuffix)
+        print(f'  Multiple suffix: {multipleSuffix}')
 
         maxConns = subsystem.config.get(name % 'maxConns')
-        print('  Maximum connections: %s' % maxConns)
+        print(f'  Maximum connections: {maxConns}')
 
         minConns = subsystem.config.get(name % 'minConns')
-        print('  Minimum connections: %s' % minConns)
+        print(f'  Minimum connections: {minConns}')
 
 
 class SubsystemDBConfigCLI(pki.cli.CLI):
@@ -269,7 +269,8 @@ class SubsystemDBConfigCLI(pki.cli.CLI):
     def __init__(self, parent):
         super().__init__(
             'config',
-            '%s database configuration management commands' % parent.parent.name.upper())
+            f'{parent.parent.name.upper()} database configuration management commands',
+        )
 
         self.parent = parent
         self.add_module(SubsystemDBConfigShowCLI(self))
@@ -281,12 +282,15 @@ class SubsystemDBConfigShowCLI(pki.cli.CLI):
     def __init__(self, parent):
         super().__init__(
             'show',
-            'Display %s database configuration' % parent.parent.parent.name.upper())
+            f'Display {parent.parent.parent.name.upper()} database configuration',
+        )
 
         self.parent = parent
 
     def print_help(self):
-        print('Usage: pki-server %s-db-config-show [OPTIONS]' % self.parent.parent.parent.name)
+        print(
+            f'Usage: pki-server {self.parent.parent.parent.name}-db-config-show [OPTIONS]'
+        )
         print()
         print('  -i, --instance <instance ID>       Instance ID (default: pki-tomcat).')
         print('  -v, --verbose                      Run in verbose mode.')
@@ -349,12 +353,15 @@ class SubsystemDBConfigModifyCLI(pki.cli.CLI):
     def __init__(self, parent):
         super().__init__(
             'mod',
-            'Modify %s database configuration' % parent.parent.parent.name.upper())
+            f'Modify {parent.parent.parent.name.upper()} database configuration',
+        )
 
         self.parent = parent
 
     def print_help(self):
-        print('Usage: pki-server %s-db-config-mod [OPTIONS]' % self.parent.parent.parent.name)
+        print(
+            f'Usage: pki-server {self.parent.parent.parent.name}-db-config-mod [OPTIONS]'
+        )
         print()
         print('  -i, --instance <instance ID>       Instance ID (default: pki-tomcat).')
         print('      --hostname <hostname>          Set hostname.')
@@ -414,17 +421,17 @@ class SubsystemDBConfigModifyCLI(pki.cli.CLI):
 
             elif o == '--port':
                 if not a.isdigit():
-                    raise ValueError('Invalid input: %s accepts a number' % o)
+                    raise ValueError(f'Invalid input: {o} accepts a number')
                 port = a
 
             elif o == '--secure':
                 if a.lower() not in ['true', 'false']:
-                    raise ValueError('Invalid input: %s accepts True or False' % o)
+                    raise ValueError(f'Invalid input: {o} accepts True or False')
                 secure = a.lower() == 'true'
 
             elif o == '--auth':
                 if a not in ['BasicAuth', 'SslClientAuth']:
-                    raise ValueError('Invalid input: %s' % a)
+                    raise ValueError(f'Invalid input: {a}')
                 auth = a
 
             elif o == '--bindDN':
@@ -444,17 +451,17 @@ class SubsystemDBConfigModifyCLI(pki.cli.CLI):
 
             elif o == '--multiSuffix':
                 if a.lower() not in ['true', 'false']:
-                    raise ValueError('Invalid input: %s accepts True or False' % o)
+                    raise ValueError(f'Invalid input: {o} accepts True or False')
                 multiSuffix = a.lower() == 'true'
 
             elif o == '--maxConns':
                 if not a.isdigit():
-                    raise ValueError('Invalid input: %s accepts a number' % o)
+                    raise ValueError(f'Invalid input: {o} accepts a number')
                 maxConns = a
 
             elif o == '--minConns':
                 if not a.isdigit():
-                    raise ValueError('Invalid input: %s accepts a number' % o)
+                    raise ValueError(f'Invalid input: {o} accepts a number')
                 minConns = a
 
             elif o in ('-v', '--verbose'):
@@ -496,11 +503,7 @@ class SubsystemDBConfigModifyCLI(pki.cli.CLI):
             subsystem.config[name % 'ldapconn.port'] = port
 
         if secure is not None:
-            if secure:
-                subsystem.config[name % 'ldapconn.secureConn'] = 'true'
-            else:
-                subsystem.config[name % 'ldapconn.secureConn'] = 'false'
-
+            subsystem.config[name % 'ldapconn.secureConn'] = 'true' if secure else 'false'
         if auth:
             subsystem.config[name % 'ldapauth.authtype'] = auth
 
@@ -539,12 +542,12 @@ class SubsystemDBConfigModifyCLI(pki.cli.CLI):
 class SubsystemDBInfoCLI(pki.cli.CLI):
 
     def __init__(self, parent):
-        super().__init__('info', 'Display %s database info' % parent.parent.name.upper())
+        super().__init__('info', f'Display {parent.parent.name.upper()} database info')
 
         self.parent = parent
 
     def print_help(self):
-        print('Usage: pki-server %s-db-info [OPTIONS]' % self.parent.parent.name)
+        print(f'Usage: pki-server {self.parent.parent.name}-db-info [OPTIONS]')
         print()
         print('  -i, --instance <instance ID>       Instance ID (default: pki-tomcat).')
         print('      --as-current-user              Run as current user.')
@@ -569,7 +572,7 @@ class SubsystemDBInfoCLI(pki.cli.CLI):
         subsystem_name = self.parent.parent.name
         as_current_user = False
 
-        cmd = [subsystem_name + '-db-info']
+        cmd = [f'{subsystem_name}-db-info']
 
         for o, a in opts:
             if o in ('-i', '--instance'):
@@ -615,12 +618,12 @@ class SubsystemDBInfoCLI(pki.cli.CLI):
 class SubsystemDBEmptyCLI(pki.cli.CLI):
 
     def __init__(self, parent):
-        super().__init__('empty', 'Empty %s database' % parent.parent.name.upper())
+        super().__init__('empty', f'Empty {parent.parent.name.upper()} database')
 
         self.parent = parent
 
     def print_help(self):
-        print('Usage: pki-server %s-db-empty [OPTIONS]' % self.parent.parent.name)
+        print(f'Usage: pki-server {self.parent.parent.name}-db-empty [OPTIONS]')
         print()
         print('  -i, --instance <instance ID>       Instance ID (default: pki-tomcat).')
         print('      --force                        Force database removal.')
@@ -694,12 +697,12 @@ class SubsystemDBEmptyCLI(pki.cli.CLI):
 class SubsystemDBRemoveCLI(pki.cli.CLI):
 
     def __init__(self, parent):
-        super().__init__('remove', 'Remove %s database' % parent.parent.name.upper())
+        super().__init__('remove', f'Remove {parent.parent.name.upper()} database')
 
         self.parent = parent
 
     def print_help(self):
-        print('Usage: pki-server %s-db-remove [OPTIONS]' % self.parent.parent.name)
+        print(f'Usage: pki-server {self.parent.parent.name}-db-remove [OPTIONS]')
         print()
         print('  -i, --instance <instance ID>       Instance ID (default: pki-tomcat).')
         print('      --force                        Force database removal.')

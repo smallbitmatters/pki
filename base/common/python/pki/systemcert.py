@@ -44,9 +44,9 @@ class SystemCertClient(object):
         self.cert_url = '/rest/config/cert'
 
         if subsystem:
-            self.cert_url = '/' + subsystem + self.cert_url
+            self.cert_url = f'/{subsystem}{self.cert_url}'
         elif connection.subsystem is None:
-            self.cert_url = '/ca' + self.cert_url
+            self.cert_url = f'/ca{self.cert_url}'
 
         self.headers = {'Content-type': 'application/json',
                         'Accept': 'application/json'}
@@ -58,7 +58,7 @@ class SystemCertClient(object):
 
         :return: pki.cert.CertData -- transport certificate data
         """
-        url = self.cert_url + '/transport'
+        url = f'{self.cert_url}/transport'
         response = self.connection.get(url, self.headers)
         cert_data = CertData.from_json(response.json())
 

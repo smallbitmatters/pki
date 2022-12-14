@@ -48,7 +48,7 @@ class CLI(object):
         return self.name
 
     def get_full_module_name(self, module_name):
-        return self.get_full_name() + '-' + module_name
+        return f'{self.get_full_name()}-{module_name}'
 
     def add_module(self, module):
         self.modules[module.name] = module
@@ -58,9 +58,7 @@ class CLI(object):
         return self.modules.get(name)
 
     def get_top_module(self):
-        if self.parent:
-            return self.parent.get_top_module()
-        return self
+        return self.parent.get_top_module() if self.parent else self
 
     def print_message(self, message):
         print('-' * len(message))
@@ -127,7 +125,7 @@ class CLI(object):
             i = command.find('-', position)
             if i >= 0:
                 # Dash found. Split command into module name and sub command.
-                module_name = command[0:i]
+                module_name = command[:i]
                 sub_command = command[i + 1:]
             else:
                 # Dash not found. Use the whole command.
@@ -136,8 +134,7 @@ class CLI(object):
 
             logger.debug('Module: %s', module_name)
 
-            m = self.get_module(module_name)
-            if m:
+            if m := self.get_module(module_name):
                 # Module found. Check sub command.
                 if not sub_command:
                     # No sub command. Use this module.
@@ -150,8 +147,6 @@ class CLI(object):
                     # Module has children. Use this module.
                     module = m
                     break
-
-                # Module doesn't have children. Keep looking.
 
             # If there's no more dashes, stop.
             if i < 0:
@@ -167,18 +162,10 @@ class CLI(object):
         (module, sub_command) = self.parse_command(command)
 
         if not module:
-            raise Exception('Invalid module "%s".' % command)
+            raise Exception(f'Invalid module "{command}".')
 
         # Prepare module arguments.
-        if sub_command:
-            # If module command exists, include it as arguments:
-            # <module command> <args>...
-            module_args = [sub_command] + args[1:]
-
-        else:
-            # Otherwise, pass the original arguments: <args>...
-            module_args = args[1:]
-
+        module_args = [sub_command] + args[1:] if sub_command else args[1:]
         return (module, module_args)
 
     def execute(self, argv):

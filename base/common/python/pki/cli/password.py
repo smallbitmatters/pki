@@ -65,10 +65,7 @@ class PasswordGenerateCLI(pki.cli.CLI):
             sys.exit(1)
 
         for o, _ in opts:
-            if o == '--debug':
-                logging.getLogger().setLevel(logging.DEBUG)
-
-            elif o in ('-v', '--verbose'):
+            if o in ('--debug', '-v', '--verbose'):
                 logging.getLogger().setLevel(logging.DEBUG)
 
             elif o == '--help':

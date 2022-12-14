@@ -26,7 +26,7 @@ import pki.upgrade
 import pki.util
 import pki.server
 
-UPGRADE_DIR = pki.SHARE_DIR + '/server/upgrade'
+UPGRADE_DIR = f'{pki.SHARE_DIR}/server/upgrade'
 
 INSTANCE_TRACKER = '%s/tomcat.conf'
 
@@ -40,7 +40,7 @@ class PKIServerUpgradeScriptlet(pki.upgrade.PKIUpgradeScriptlet):
         self.instance = None
 
     def get_backup_dir(self):
-        return self.instance.log_dir + '/backup/' + str(self.version) + '/' + str(self.index)
+        return f'{self.instance.log_dir}/backup/{str(self.version)}/{str(self.index)}'
 
     def upgrade_subsystem(self, instance, subsystem):
         # Callback method to upgrade a subsystem.
@@ -66,16 +66,17 @@ class PKIServerUpgrader(pki.upgrade.PKIUpgrader):
             return self.tracker
 
         self.tracker = pki.upgrade.PKIUpgradeTracker(
-            '%s instance' % self.instance,
+            f'{self.instance} instance',
             INSTANCE_TRACKER % self.instance.conf_dir,
             version_key='PKI_VERSION',
-            index_key='PKI_UPGRADE_INDEX')
+            index_key='PKI_UPGRADE_INDEX',
+        )
 
         return self.tracker
 
     def validate(self):
         if not self.is_complete():
-            raise Exception('Incomplete upgrade: %s' % self.instance)
+            raise Exception(f'Incomplete upgrade: {self.instance}')
 
     def touch(self, path):
         self.instance.touch(path)

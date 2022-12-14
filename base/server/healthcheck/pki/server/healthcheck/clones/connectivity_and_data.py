@@ -22,7 +22,7 @@ class ClonesConnectivyAndDataCheck(ClonesPlugin):
     """
     def check_ca_clones(self):
         for host in self.clone_cas:
-            cur_clone_msg = ' Host: ' + host.Hostname + ' Port: ' + host.SecurePort
+            cur_clone_msg = f' Host: {host.Hostname} Port: {host.SecurePort}'
             # Reach out and get some certs, to serve as a data and connectivity check
             try:
                 connection = PKIConnection(protocol='https',
@@ -37,17 +37,17 @@ class ClonesConnectivyAndDataCheck(ClonesPlugin):
                 if certs is not None and len(certs.cert_data_info_list) == 3:
                     logger.info('Cert data successfully obtained from clone.')
                 else:
-                    raise BaseException('CA clone problem reading data.' + cur_clone_msg)
+                    raise BaseException(f'CA clone problem reading data.{cur_clone_msg}')
             except BaseException as e:
                 logger.error("Internal server error %s", e)
-                raise BaseException('Internal error testing CA clone.' + cur_clone_msg)
+                raise BaseException(f'Internal error testing CA clone.{cur_clone_msg}')
 
         return
 
     def check_kra_clones(self):
         for host in self.clone_kras:
 
-            url = 'https://' + host.Hostname + ':' + host.SecurePort
+            url = f'https://{host.Hostname}:{host.SecurePort}'
 
             try:
                 status = self.get_status(
@@ -58,16 +58,16 @@ class ClonesConnectivyAndDataCheck(ClonesPlugin):
                 logger.info('KRA at %s is %s', url, status)
 
                 if status != 'running':
-                    raise Exception('KRA at %s is %s' % (url, status))
+                    raise Exception(f'KRA at {url} is {status}')
 
             except Exception as e:
                 logger.error('Unable to reach KRA at %s: %s', url, e)
-                raise Exception('Unable to reach KRA at %s: %s' % (url, e))
+                raise Exception(f'Unable to reach KRA at {url}: {e}')
 
     def check_ocsp_clones(self):
         for host in self.clone_ocsps:
 
-            url = 'https://' + host.Hostname + ':' + host.SecurePort
+            url = f'https://{host.Hostname}:{host.SecurePort}'
 
             try:
                 status = self.get_status(
@@ -78,16 +78,16 @@ class ClonesConnectivyAndDataCheck(ClonesPlugin):
                 logger.info('OCSP at %s is %s', url, status)
 
                 if status != 'running':
-                    raise Exception('OCSP at %s is %s' % (url, status))
+                    raise Exception(f'OCSP at {url} is {status}')
 
             except Exception as e:
                 logger.error('Unable to reach OCSP at %s: %s', url, e)
-                raise Exception('Unable to reach OCSP at %s: %s' % (url, e))
+                raise Exception(f'Unable to reach OCSP at {url}: {e}')
 
     def check_tks_clones(self):
         for host in self.clone_tkss:
 
-            url = 'https://' + host.Hostname + ':' + host.SecurePort
+            url = f'https://{host.Hostname}:{host.SecurePort}'
 
             try:
                 status = self.get_status(
@@ -98,16 +98,16 @@ class ClonesConnectivyAndDataCheck(ClonesPlugin):
                 logger.info('TKS at %s is %s', url, status)
 
                 if status != 'running':
-                    raise Exception('TKS at %s is %s' % (url, status))
+                    raise Exception(f'TKS at {url} is {status}')
 
             except Exception as e:
                 logger.error('Unable to reach TKS at %s: %s', url, e)
-                raise Exception('Unable to reach TKS at %s: %s' % (url, e))
+                raise Exception(f'Unable to reach TKS at {url}: {e}')
 
     def check_tps_clones(self):
         for host in self.clone_tpss:
 
-            url = 'https://' + host.Hostname + ':' + host.SecurePort
+            url = f'https://{host.Hostname}:{host.SecurePort}'
 
             try:
                 status = self.get_status(
@@ -118,19 +118,22 @@ class ClonesConnectivyAndDataCheck(ClonesPlugin):
                 logger.info('TPS at %s is %s', url, status)
 
                 if status != 'running':
-                    raise Exception('TPS at %s is %s' % (url, status))
+                    raise Exception(f'TPS at {url} is {status}')
 
             except Exception as e:
                 logger.error('Unable to reach TPS at %s: %s', url, e)
-                raise Exception('Unable to reach TPS at %s: %s' % (url, e))
+                raise Exception(f'Unable to reach TPS at {url}: {e}')
 
     @duration
     def check(self):
         logger.info("Entering ClonesConnectivityCheck : %s", self.instance.name)
         if not self.instance.exists():
             logger.debug('Invalid instance: %s', self.instance.name)
-            yield Result(self, constants.CRITICAL,
-                         status='Invalid PKI instance: %s' % self.instance.name)
+            yield Result(
+                self,
+                constants.CRITICAL,
+                status=f'Invalid PKI instance: {self.instance.name}',
+            )
             return
         self.instance.load()
 
@@ -139,8 +142,11 @@ class ClonesConnectivyAndDataCheck(ClonesPlugin):
 
         logger.info('sechost %s secport %s ', sechost, secport)
         if security_domain_ca is None:
-            yield Result(self, constants.SUCCESS,
-                         status='Instance  not a security domain. %s' % self.instance.name)
+            yield Result(
+                self,
+                constants.SUCCESS,
+                status=f'Instance  not a security domain. {self.instance.name}',
+            )
         security_domain_data = self.get_security_domain_data(sechost, secport)
 
         if security_domain_data is not None:
@@ -149,40 +155,64 @@ class ClonesConnectivyAndDataCheck(ClonesPlugin):
             hard_msg = ' Clones tested successfully, or not present.'
             try:
                 self.check_ca_clones()
-                yield Result(self, constants.SUCCESS,
-                             instance_name=self.instance.name,
-                             status='CA' + hard_msg)
+                yield Result(
+                    self,
+                    constants.SUCCESS,
+                    instance_name=self.instance.name,
+                    status=f'CA{hard_msg}',
+                )
 
             except BaseException as e:
-                yield Result(self, constants.ERROR,
-                             status='ERROR:  %s' % self.instance.name + ' : ' + str(e))
+                yield Result(
+                    self,
+                    constants.ERROR,
+                    status=f'ERROR:  {self.instance.name} : {str(e)}',
+                )
 
             try:
                 self.check_kra_clones()
-                yield Result(self, constants.SUCCESS,
-                             instance_name=self.instance.name,
-                             status='KRA' + hard_msg)
+                yield Result(
+                    self,
+                    constants.SUCCESS,
+                    instance_name=self.instance.name,
+                    status=f'KRA{hard_msg}',
+                )
             except BaseException as e:
-                yield Result(self, constants.ERROR,
-                             status='ERROR:  %s' % self.instance.name + ' : ' + str(e))
+                yield Result(
+                    self,
+                    constants.ERROR,
+                    status=f'ERROR:  {self.instance.name} : {str(e)}',
+                )
 
             try:
                 self.check_ocsp_clones()
-                yield Result(self, constants.SUCCESS,
-                             instance_name=self.instance.name,
-                             status='OCSP' + hard_msg)
+                yield Result(
+                    self,
+                    constants.SUCCESS,
+                    instance_name=self.instance.name,
+                    status=f'OCSP{hard_msg}',
+                )
             except BaseException as e:
-                yield Result(self, constants.ERROR,
-                             status='ERROR:  %s' % self.instance.name + ' : ' + str(e))
+                yield Result(
+                    self,
+                    constants.ERROR,
+                    status=f'ERROR:  {self.instance.name} : {str(e)}',
+                )
 
             try:
                 self.check_tks_clones()
-                yield Result(self, constants.SUCCESS,
-                             instance_name=self.instance.name,
-                             status='TKS' + hard_msg)
+                yield Result(
+                    self,
+                    constants.SUCCESS,
+                    instance_name=self.instance.name,
+                    status=f'TKS{hard_msg}',
+                )
             except BaseException as e:
-                yield Result(self, constants.ERROR,
-                             status='ERROR:  %s' % self.instance.name + ' : ' + str(e))
+                yield Result(
+                    self,
+                    constants.ERROR,
+                    status=f'ERROR:  {self.instance.name} : {str(e)}',
+                )
 
             try:
                 self.check_tps_clones()
@@ -190,8 +220,11 @@ class ClonesConnectivyAndDataCheck(ClonesPlugin):
                              instance_name=self.instance.name,
                              status="TPS Clones tested successfully, or not present.")
             except BaseException as e:
-                yield Result(self, constants.ERROR,
-                             status='ERROR:  %s' % self.instance.name + ' : ' + str(e))
+                yield Result(
+                    self,
+                    constants.ERROR,
+                    status=f'ERROR:  {self.instance.name} : {str(e)}',
+                )
         else:
             yield Result(self, constants.SUCCESS,
                          instance_name=self.instance.name,

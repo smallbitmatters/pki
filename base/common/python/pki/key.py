@@ -491,8 +491,8 @@ class KeyClient(object):
         self.key_requests_url = '/rest/agent/keyrequests'
 
         if connection.subsystem is None:
-            self.key_url = '/kra' + self.key_url
-            self.key_requests_url = '/kra' + self.key_requests_url
+            self.key_url = f'/kra{self.key_url}'
+            self.key_requests_url = f'/kra{self.key_requests_url}'
 
         self.headers = {'Content-type': 'application/json',
                         'Accept': 'application/json'}
@@ -543,9 +543,7 @@ class KeyClient(object):
             # load default and system-wide pki.conf into os.environ
             pki.util.read_environment_files()
         client_keyset = os.environ.get('KEY_WRAP_PARAMETER_SET')
-        if client_keyset is not None:
-            return int(client_keyset)
-        return 0
+        return int(client_keyset) if client_keyset is not None else 0
 
     def get_server_keyset(self):
         # get server keyset id
@@ -556,10 +554,7 @@ class KeyClient(object):
             # TODO(alee) tighten up the exception here
             pass
 
-        if server_version >= (10, 4):
-            return 1
-
-        return 0
+        return 1 if server_version >= (10, 4) else 0
 
     @pki.handle_exceptions()
     def list_keys(self, client_key_id=None, status=None, max_results=None,
@@ -602,7 +597,7 @@ class KeyClient(object):
         if request_id is None:
             raise TypeError("Request ID must be specified")
 
-        url = self.key_requests_url + '/' + request_id
+        url = f'{self.key_requests_url}/{request_id}'
         response = self.connection.get(url, self.headers)
         return KeyRequestInfo.from_json(response.json())
 
@@ -612,7 +607,7 @@ class KeyClient(object):
         if key_id is None:
             raise TypeError("Key ID must be specified")
 
-        url = self.key_url + '/' + key_id
+        url = f'{self.key_url}/{key_id}'
         response = self.connection.get(url, headers=self.headers)
         return KeyInfo.from_json(response.json())
 
@@ -622,7 +617,7 @@ class KeyClient(object):
         if client_key_id is None:
             raise TypeError("Client Key ID must be specified")
 
-        url = self.key_url + '/active/' + quote(client_key_id)
+        url = f'{self.key_url}/active/{quote(client_key_id)}'
         response = self.connection.get(url, headers=self.headers)
         return KeyInfo.from_json(response.json())
 
@@ -632,7 +627,7 @@ class KeyClient(object):
         if (key_id is None) or (status is None):
             raise TypeError("Key ID and status must be specified")
 
-        url = self.key_url + '/' + key_id
+        url = f'{self.key_url}/{key_id}'
         params = {'status': status}
         self.connection.post(url, None, headers=self.headers, params=params)
 
@@ -642,7 +637,7 @@ class KeyClient(object):
         if request_id is None:
             raise TypeError("Request ID must be specified")
 
-        url = self.key_requests_url + '/' + request_id + '/approve'
+        url = f'{self.key_requests_url}/{request_id}/approve'
         self.connection.post(url, None, self.headers)
 
     @pki.handle_exceptions()
@@ -651,7 +646,7 @@ class KeyClient(object):
         if request_id is None:
             raise TypeError("Request ID must be specified")
 
-        url = self.key_requests_url + '/' + request_id + '/reject'
+        url = f'{self.key_requests_url}/{request_id}/reject'
         self.connection.post(url, None, self.headers)
 
     @pki.handle_exceptions()
@@ -660,7 +655,7 @@ class KeyClient(object):
         if request_id is None:
             raise TypeError("Request ID must be specified")
 
-        url = self.key_requests_url + '/' + request_id + '/cancel'
+        url = f'{self.key_requests_url}/{request_id}/cancel'
         self.connection.post(url, None, self.headers)
 
     @pki.handle_exceptions()
@@ -739,7 +734,7 @@ class KeyClient(object):
             raise TypeError("Must specify Client Key ID")
 
         if str(algorithm).upper() not in \
-                [self.RSA_ALGORITHM, self.DSA_ALGORITHM]:
+                    [self.RSA_ALGORITHM, self.DSA_ALGORITHM]:
             raise TypeError("Only RSA and DSA algorithms are supported.")
 
         # For generating keys using the RSA algorithm, the valid range of key
@@ -752,9 +747,8 @@ class KeyClient(object):
                 raise ValueError("Invalid key size specified.")
             if ((key_size - 256) % 16) != 0:
                 raise ValueError("Invalid key size specified.")
-        if algorithm == self.DSA_ALGORITHM:
-            if key_size not in [512, 768, 1024]:
-                raise ValueError("Invalid key size specified.")
+        if algorithm == self.DSA_ALGORITHM and key_size not in [512, 768, 1024]:
+            raise ValueError("Invalid key size specified.")
 
         if trans_wrapped_session_key is not None:
             raise NotImplementedError(
@@ -799,11 +793,14 @@ class KeyClient(object):
         if (client_key_id is None) or (data_type is None):
             raise TypeError("Client Key ID and data type must be specified")
 
-        if data_type == KeyClient.SYMMETRIC_KEY_TYPE:
-            if (key_algorithm is None) or (key_size is None):
-                raise TypeError(
-                    "For symmetric keys, key algorithm and key_size must "
-                    "be specified")
+        if (
+            data_type == KeyClient.SYMMETRIC_KEY_TYPE
+            and (key_algorithm is None)
+            or (key_size is None)
+        ):
+            raise TypeError(
+                "For symmetric keys, key algorithm and key_size must "
+                "be specified")
 
         if private_data is None:
             raise TypeError("No data provided to be archived")
@@ -867,11 +864,14 @@ class KeyClient(object):
         if (client_key_id is None) or (data_type is None):
             raise TypeError("Client Key ID and data type must be specified")
 
-        if data_type == KeyClient.SYMMETRIC_KEY_TYPE:
-            if (key_algorithm is None) or (key_size is None):
-                raise TypeError(
-                    "For symmetric keys, key algorithm and key size "
-                    "must be specified")
+        if (
+            data_type == KeyClient.SYMMETRIC_KEY_TYPE
+            and (key_algorithm is None)
+            or (key_size is None)
+        ):
+            raise TypeError(
+                "For symmetric keys, key algorithm and key size "
+                "must be specified")
 
         if not encrypted_data:
             raise TypeError('Missing encrypted data')
@@ -924,11 +924,14 @@ class KeyClient(object):
         if (client_key_id is None) or (data_type is None):
             raise TypeError("Client Key_ID and Data Type must be specified")
 
-        if data_type == KeyClient.SYMMETRIC_KEY_TYPE:
-            if (key_algorithm is None) or (key_size is None):
-                raise TypeError(
-                    "For symmetric keys, key algorithm and key_size "
-                    "must be specified")
+        if (
+            data_type == KeyClient.SYMMETRIC_KEY_TYPE
+            and (key_algorithm is None)
+            or (key_size is None)
+        ):
+            raise TypeError(
+                "For symmetric keys, key algorithm and key_size "
+                "must be specified")
 
         if pki_archive_options is None:
             raise TypeError("No data provided to be archived")
@@ -984,7 +987,7 @@ class KeyClient(object):
         if data is None:
             raise TypeError("Key Recovery Request must be specified")
 
-        url = self.key_url + '/retrieve'
+        url = f'{self.key_url}/retrieve'
         key_request = json.dumps(data, cls=encoder.CustomTypeEncoder,
                                  sort_keys=True)
         response = self.connection.post(url, key_request, self.headers)

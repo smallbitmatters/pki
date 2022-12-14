@@ -146,31 +146,29 @@ class PKIServerCLI(pki.cli.CLI):
 
     @staticmethod
     def print_status(instance):
-        print('  Instance ID: %s' % instance.name)
-        print('  Active: %s' % instance.is_active())
-        print('  Nuxwdog Enabled: %s' % instance.type.endswith('-nuxwdog'))
+        print(f'  Instance ID: {instance.name}')
+        print(f'  Active: {instance.is_active()}')
+        print(f"  Nuxwdog Enabled: {instance.type.endswith('-nuxwdog')}")
 
         server_config = instance.get_server_config()
 
         unsecurePort = server_config.get_unsecure_port()
         if unsecurePort:
-            print('  Unsecure Port: %s' % unsecurePort)
+            print(f'  Unsecure Port: {unsecurePort}')
 
         securePort = server_config.get_secure_port()
         if securePort:
-            print('  Secure Port: %s' % securePort)
+            print(f'  Secure Port: {securePort}')
 
-        ajpPort = server_config.get_ajp_port()
-        if ajpPort:
-            print('  AJP Port: %s' % ajpPort)
+        if ajpPort := server_config.get_ajp_port():
+            print(f'  AJP Port: {ajpPort}')
 
         tomcatPort = server_config.get_port()
-        print('  Tomcat Port: %s' % tomcatPort)
+        print(f'  Tomcat Port: {tomcatPort}')
 
         hostname = socket.gethostname()
 
-        ca = instance.get_subsystem('ca')
-        if ca:
+        if ca := instance.get_subsystem('ca'):
             print()
             print('  CA Subsystem:')
 
@@ -180,29 +178,26 @@ class PKIServerCLI(pki.cli.CLI):
                 subsystem_type = ca.config['hierarchy.select'] + ' CA'
             if ca.config['securitydomain.select'] == 'new':
                 subsystem_type += ' (Security Domain)'
-            print('    Type:                %s' % subsystem_type)
+            print(f'    Type:                {subsystem_type}')
 
-            print('    SD Name:             %s' % ca.config['securitydomain.name'])
-            url = 'https://%s:%s' % (
-                ca.config['securitydomain.host'],
-                ca.config['securitydomain.httpsadminport'])
-            print('    SD Registration URL: %s' % url)
+            print(f"    SD Name:             {ca.config['securitydomain.name']}")
+            url = f"https://{ca.config['securitydomain.host']}:{ca.config['securitydomain.httpsadminport']}"
+            print(f'    SD Registration URL: {url}')
 
             enabled = ca.is_enabled()
-            print('    Enabled:             %s' % enabled)
+            print(f'    Enabled:             {enabled}')
 
             if enabled:
-                url = 'http://%s:%s/ca' % (hostname, unsecurePort)
-                print('    Unsecure URL:        %s/ee/ca' % url)
+                url = f'http://{hostname}:{unsecurePort}/ca'
+                print(f'    Unsecure URL:        {url}/ee/ca')
 
-                url = 'https://%s:%s/ca' % (hostname, securePort)
-                print('    Secure Agent URL:    %s/agent/ca' % url)
-                print('    Secure EE URL:       %s/ee/ca' % url)
-                print('    Secure Admin URL:    %s/services' % url)
-                print('    PKI Console URL:     %s' % url)
+                url = f'https://{hostname}:{securePort}/ca'
+                print(f'    Secure Agent URL:    {url}/agent/ca')
+                print(f'    Secure EE URL:       {url}/ee/ca')
+                print(f'    Secure Admin URL:    {url}/services')
+                print(f'    PKI Console URL:     {url}')
 
-        kra = instance.get_subsystem('kra')
-        if kra:
+        if kra := instance.get_subsystem('kra'):
             print()
             print('  KRA Subsystem:')
 
@@ -211,25 +206,22 @@ class PKIServerCLI(pki.cli.CLI):
                 subsystem_type += ' Clone'
             elif kra.config['kra.standalone'] == 'true':
                 subsystem_type += ' (Standalone)'
-            print('    Type:                %s' % subsystem_type)
+            print(f'    Type:                {subsystem_type}')
 
-            print('    SD Name:             %s' % kra.config['securitydomain.name'])
-            url = 'https://%s:%s' % (
-                kra.config['securitydomain.host'],
-                kra.config['securitydomain.httpsadminport'])
-            print('    SD Registration URL: %s' % url)
+            print(f"    SD Name:             {kra.config['securitydomain.name']}")
+            url = f"https://{kra.config['securitydomain.host']}:{kra.config['securitydomain.httpsadminport']}"
+            print(f'    SD Registration URL: {url}')
 
             enabled = kra.is_enabled()
-            print('    Enabled:             %s' % enabled)
+            print(f'    Enabled:             {enabled}')
 
             if enabled:
-                url = 'https://%s:%s/kra' % (hostname, securePort)
-                print('    Secure Agent URL:    %s/agent/kra' % url)
-                print('    Secure Admin URL:    %s/services' % url)
-                print('    PKI Console URL:     %s' % url)
+                url = f'https://{hostname}:{securePort}/kra'
+                print(f'    Secure Agent URL:    {url}/agent/kra')
+                print(f'    Secure Admin URL:    {url}/services')
+                print(f'    PKI Console URL:     {url}')
 
-        ocsp = instance.get_subsystem('ocsp')
-        if ocsp:
+        if ocsp := instance.get_subsystem('ocsp'):
             print()
             print('  OCSP Subsystem:')
 
@@ -238,12 +230,10 @@ class PKIServerCLI(pki.cli.CLI):
                 subsystem_type += ' Clone'
             elif ocsp.config['ocsp.standalone'] == 'true':
                 subsystem_type += ' (Standalone)'
-            print('    Type:                %s' % subsystem_type)
+            print(f'    Type:                {subsystem_type}')
 
-            print('    SD Name:             %s' % ocsp.config['securitydomain.name'])
-            url = 'https://%s:%s' % (
-                ocsp.config['securitydomain.host'],
-                ocsp.config['securitydomain.httpsadminport'])
+            print(f"    SD Name:             {ocsp.config['securitydomain.name']}")
+            url = f"https://{ocsp.config['securitydomain.host']}:{ocsp.config['securitydomain.httpsadminport']}"
             print('    SD Registration URL: %s' % url)
 
             enabled = ocsp.is_enabled()
@@ -259,8 +249,7 @@ class PKIServerCLI(pki.cli.CLI):
                 print('    Secure Admin URL:    %s/services' % url)
                 print('    PKI Console URL:     %s' % url)
 
-        tks = instance.get_subsystem('tks')
-        if tks:
+        if tks := instance.get_subsystem('tks'):
             print()
             print('  TKS Subsystem:')
 
@@ -284,8 +273,7 @@ class PKIServerCLI(pki.cli.CLI):
                 print('    Secure Admin URL:    %s/services' % url)
                 print('    PKI Console URL:     %s' % url)
 
-        tps = instance.get_subsystem('tps')
-        if tps:
+        if tps := instance.get_subsystem('tps'):
             print()
             print('  TPS Subsystem:')
 
@@ -343,7 +331,6 @@ class CreateCLI(pki.cli.CLI):
             self.print_help()
             sys.exit(1)
 
-        instance_name = 'pki-tomcat'
         user = None
         group = None
         with_maven_deps = False
@@ -377,9 +364,7 @@ class CreateCLI(pki.cli.CLI):
                 self.print_help()
                 sys.exit(1)
 
-        if len(args) > 0:
-            instance_name = args[0]
-
+        instance_name = args[0] if len(args) > 0 else 'pki-tomcat'
         instance = pki.server.instance.PKIServerFactory.create(instance_name)
 
         if not force and instance.exists():
@@ -425,7 +410,6 @@ class RemoveCLI(pki.cli.CLI):
             self.print_help()
             sys.exit(1)
 
-        instance_name = 'pki-tomcat'
         force = False
 
         for o, _ in opts:
@@ -447,9 +431,7 @@ class RemoveCLI(pki.cli.CLI):
                 self.print_help()
                 sys.exit(1)
 
-        if len(args) > 0:
-            instance_name = args[0]
-
+        instance_name = args[0] if len(args) > 0 else 'pki-tomcat'
         instance = pki.server.instance.PKIServerFactory.create(instance_name)
 
         if not force and not instance.exists():
@@ -485,8 +467,6 @@ class StatusCLI(pki.cli.CLI):
             self.print_help()
             sys.exit(1)
 
-        instance_name = 'pki-tomcat'
-
         for o, _ in opts:
             if o in ('-v', '--verbose'):
                 logging.getLogger().setLevel(logging.INFO)
@@ -503,9 +483,7 @@ class StatusCLI(pki.cli.CLI):
                 self.print_help()
                 sys.exit(1)
 
-        if len(args) > 0:
-            instance_name = args[0]
-
+        instance_name = args[0] if len(args) > 0 else 'pki-tomcat'
         instance = pki.server.instance.PKIServerFactory.create(instance_name)
 
         if not instance.exists():

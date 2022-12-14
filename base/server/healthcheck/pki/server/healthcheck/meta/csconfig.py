@@ -32,7 +32,7 @@ def compare_nssdb_with_cs(class_instance, subsystem, cert_tag):
     """
 
     # Generate cert_id for logging purpose
-    cert_id = '{}_{}'.format(subsystem.name, cert_tag)
+    cert_id = f'{subsystem.name}_{cert_tag}'
 
     # Load cert from CS
     cert = subsystem.get_cert_info(cert_tag)
@@ -50,14 +50,17 @@ def compare_nssdb_with_cs(class_instance, subsystem, cert_tag):
             )
         except Exception as e:  # pylint: disable=broad-except
             logger.debug('Unable to load cert from NSSDB: %s', str(e))
-            return Result(class_instance, constants.ERROR,
-                          key=cert_id,
-                          nssdbDir=subsystem.instance.nssdb_dir,
-                          msg='Unable to load cert from NSSDB: %s' % str(e))
+            return Result(
+                class_instance,
+                constants.ERROR,
+                key=cert_id,
+                nssdbDir=subsystem.instance.nssdb_dir,
+                msg=f'Unable to load cert from NSSDB: {str(e)}',
+            )
 
     # Compare whether the certs match
     if cert_nssdb != cert_cs:
-        directive = '%s.%s.cert' % (subsystem.name, cert_tag)
+        directive = f'{subsystem.name}.{cert_tag}.cert'
         return Result(class_instance, constants.ERROR,
                       key=cert_id,
                       nickname=cert['nickname'],
@@ -83,8 +86,11 @@ class CADogtagCertsConfigCheck(MetaPlugin):
     def check(self):
         if not self.instance.exists():
             logger.debug('Invalid instance: %s', self.instance.name)
-            yield Result(self, constants.CRITICAL,
-                         msg='Invalid PKI instance: %s' % self.instance.name)
+            yield Result(
+                self,
+                constants.CRITICAL,
+                msg=f'Invalid PKI instance: {self.instance.name}',
+            )
             return
 
         self.instance.load()
@@ -120,8 +126,11 @@ class KRADogtagCertsConfigCheck(MetaPlugin):
     def check(self):
         if not self.instance.exists():
             logger.debug('Invalid instance: %s', self.instance.name)
-            yield Result(self, constants.CRITICAL,
-                         msg='Invalid PKI instance: %s' % self.instance.name)
+            yield Result(
+                self,
+                constants.CRITICAL,
+                msg=f'Invalid PKI instance: {self.instance.name}',
+            )
             return
 
         self.instance.load()
@@ -157,8 +166,11 @@ class OCSPDogtagCertsConfigCheck(MetaPlugin):
     def check(self):
         if not self.instance.exists():
             logger.debug('Invalid instance: %s', self.instance.name)
-            yield Result(self, constants.CRITICAL,
-                         msg='Invalid PKI instance: %s' % self.instance.name)
+            yield Result(
+                self,
+                constants.CRITICAL,
+                msg=f'Invalid PKI instance: {self.instance.name}',
+            )
             return
 
         self.instance.load()
@@ -193,8 +205,11 @@ class TKSDogtagCertsConfigCheck(MetaPlugin):
     def check(self):
         if not self.instance.exists():
             logger.debug('Invalid instance: %s', self.instance.name)
-            yield Result(self, constants.CRITICAL,
-                         msg='Invalid PKI instance: %s' % self.instance.name)
+            yield Result(
+                self,
+                constants.CRITICAL,
+                msg=f'Invalid PKI instance: {self.instance.name}',
+            )
             return
 
         self.instance.load()
@@ -228,8 +243,11 @@ class TPSDogtagCertsConfigCheck(MetaPlugin):
     def check(self):
         if not self.instance.exists():
             logger.debug('Invalid instance: %s', self.instance.name)
-            yield Result(self, constants.CRITICAL,
-                         msg='Invalid PKI instance: %s' % self.instance.name)
+            yield Result(
+                self,
+                constants.CRITICAL,
+                msg=f'Invalid PKI instance: {self.instance.name}',
+            )
             return
 
         self.instance.load()

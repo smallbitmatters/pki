@@ -202,20 +202,18 @@ class CryptographyCryptoProvider(CryptoProvider):
         if wrapping_key is None:
             raise ValueError("Wrapping key must be provided")
 
-        if self.encrypt_mode.name == "CBC":
-            padder = padding.PKCS7(self.encrypt_alg.block_size).padder()
-            padded_data = padder.update(data) + padder.finalize()
-            data = padded_data
-        else:
+        if self.encrypt_mode.name != "CBC":
             raise ValueError('Only CBC mode is currently supported')
 
+        padder = padding.PKCS7(self.encrypt_alg.block_size).padder()
+        padded_data = padder.update(data) + padder.finalize()
+        data = padded_data
         cipher = Cipher(self.encrypt_alg(wrapping_key),
                         self.encrypt_mode(nonce_iv),
                         backend=self.backend)
 
         encryptor = cipher.encryptor()
-        ct = encryptor.update(data) + encryptor.finalize()
-        return ct
+        return encryptor.update(data) + encryptor.finalize()
 
     def symmetric_unwrap(self, data, wrapping_key,
                          mechanism=None, nonce_iv=None):
@@ -241,13 +239,12 @@ class CryptographyCryptoProvider(CryptoProvider):
         decryptor = cipher.decryptor()
         unwrapped = decryptor.update(data) + decryptor.finalize()
 
-        if self.encrypt_mode.name == 'CBC':
-            unpadder = padding.PKCS7(self.encrypt_alg.block_size).unpadder()
-            unpadded = unpadder.update(unwrapped) + unpadder.finalize()
-            unwrapped = unpadded
-        else:
+        if self.encrypt_mode.name != 'CBC':
             raise ValueError('Only CBC mode is currently supported')
 
+        unpadder = padding.PKCS7(self.encrypt_alg.block_size).unpadder()
+        unpadded = unpadder.update(unwrapped) + unpadder.finalize()
+        unwrapped = unpadded
         return unwrapped
 
     def asymmetric_wrap(self, data, wrapping_cert,
@@ -276,7 +273,7 @@ class CryptographyCryptoProvider(CryptoProvider):
         Unwrap the encrypted data which has been wrapped using a
         KeyWrap mechanism.
         """
-        if mechanism == WRAP_AES_CBC_PAD or mechanism == WRAP_DES3_CBC_PAD:
+        if mechanism in [WRAP_AES_CBC_PAD, WRAP_DES3_CBC_PAD]:
             return self.symmetric_unwrap(
                 data,
                 wrapping_key,
@@ -285,7 +282,7 @@ class CryptographyCryptoProvider(CryptoProvider):
         if mechanism == WRAP_AES_KEY_WRAP:
             return keywrap.aes_key_unwrap(wrapping_key, data, self.backend)
 
-        raise ValueError("Unsupported key wrap algorithm: " + mechanism)
+        raise ValueError(f"Unsupported key wrap algorithm: {mechanism}")
 
     def get_cert(self, cert_nick):
         """

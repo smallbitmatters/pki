@@ -61,9 +61,8 @@ class HTTPConnectorCLI(pki.cli.CLI):
     @staticmethod
     def print_param(element, name, label):
 
-        value = element.get(name)
-        if value:
-            print('  %s: %s' % (label, value))
+        if value := element.get(name):
+            print(f'  {label}: {value}')
 
     @staticmethod
     def set_param(element, name, value):
@@ -132,7 +131,7 @@ class HTTPConnectorAddCLI(pki.cli.CLI):
                 'verbose', 'debug', 'help'])
 
         except getopt.GetoptError as e:
-            print('ERROR: %s' % e)
+            print(f'ERROR: {e}')
             self.print_help()
             sys.exit(1)
 
@@ -189,7 +188,7 @@ class HTTPConnectorAddCLI(pki.cli.CLI):
                 sys.exit()
 
             else:
-                print('ERROR: Unknown option: %s' % o)
+                print(f'ERROR: Unknown option: {o}')
                 self.print_help()
                 sys.exit(1)
 
@@ -204,7 +203,7 @@ class HTTPConnectorAddCLI(pki.cli.CLI):
         instance = pki.server.instance.PKIServerFactory.create(instance_name)
 
         if not instance.exists():
-            print('ERROR: invalid instance: %s' % instance_name)
+            print(f'ERROR: invalid instance: {instance_name}')
             sys.exit(1)
 
         instance.load()
@@ -214,7 +213,7 @@ class HTTPConnectorAddCLI(pki.cli.CLI):
         connector = server_config.get_connector(name)
 
         if connector is not None:
-            raise Exception('Connector already exists: %s' % name)
+            raise Exception(f'Connector already exists: {name}')
 
         connector = server_config.create_connector(name)
 
@@ -258,7 +257,7 @@ class HTTPConnectorDeleteCLI(pki.cli.CLI):
                 'verbose', 'debug', 'help'])
 
         except getopt.GetoptError as e:
-            print('ERROR: %s' % e)
+            print(f'ERROR: {e}')
             self.print_help()
             sys.exit(1)
 
@@ -279,7 +278,7 @@ class HTTPConnectorDeleteCLI(pki.cli.CLI):
                 sys.exit()
 
             else:
-                print('ERROR: Unknown option: %s' % o)
+                print(f'ERROR: Unknown option: {o}')
                 self.print_help()
                 sys.exit(1)
 
@@ -293,7 +292,7 @@ class HTTPConnectorDeleteCLI(pki.cli.CLI):
         instance = pki.server.instance.PKIServerFactory.create(instance_name)
 
         if not instance.exists():
-            print('ERROR: Invalid instance: %s' % instance_name)
+            print(f'ERROR: Invalid instance: {instance_name}')
             sys.exit(1)
 
         instance.load()
@@ -325,7 +324,7 @@ class HTTPConnectorFindCLI(pki.cli.CLI):
                 'verbose', 'debug', 'help'])
 
         except getopt.GetoptError as e:
-            print('ERROR: %s' % e)
+            print(f'ERROR: {e}')
             self.print_help()
             sys.exit(1)
 
@@ -346,14 +345,14 @@ class HTTPConnectorFindCLI(pki.cli.CLI):
                 sys.exit()
 
             else:
-                print('ERROR: Unknown option: %s' % o)
+                print(f'ERROR: Unknown option: {o}')
                 self.print_help()
                 sys.exit(1)
 
         instance = pki.server.instance.PKIServerFactory.create(instance_name)
 
         if not instance.exists():
-            print('ERROR: Invalid instance: %s' % instance_name)
+            print(f'ERROR: Invalid instance: {instance_name}')
             sys.exit(1)
 
         instance.load()
@@ -361,7 +360,7 @@ class HTTPConnectorFindCLI(pki.cli.CLI):
         server_config = instance.get_server_config()
         connectors = server_config.get_connectors()
 
-        self.print_message('%s entries matched' % len(connectors))
+        self.print_message(f'{len(connectors)} entries matched')
 
         first = True
         for connector in connectors:
@@ -396,7 +395,7 @@ class HTTPConnectorShowCLI(pki.cli.CLI):
                 'verbose', 'debug', 'help'])
 
         except getopt.GetoptError as e:
-            print('ERROR: %s' % e)
+            print(f'ERROR: {e}')
             self.print_help()
             sys.exit(1)
 
@@ -417,7 +416,7 @@ class HTTPConnectorShowCLI(pki.cli.CLI):
                 sys.exit()
 
             else:
-                print('ERROR: Unknown option: %s' % o)
+                print(f'ERROR: Unknown option: {o}')
                 self.print_help()
                 sys.exit(1)
 
@@ -431,7 +430,7 @@ class HTTPConnectorShowCLI(pki.cli.CLI):
         instance = pki.server.instance.PKIServerFactory.create(instance_name)
 
         if not instance.exists():
-            print('ERROR: Invalid instance: %s' % instance_name)
+            print(f'ERROR: Invalid instance: {instance_name}')
             sys.exit(1)
 
         instance.load()
@@ -440,7 +439,7 @@ class HTTPConnectorShowCLI(pki.cli.CLI):
         connector = server_config.get_connector(name)
 
         if connector is None:
-            raise KeyError('Connector not found: %s' % name)
+            raise KeyError(f'Connector not found: {name}')
 
         HTTPConnectorCLI.print_connector(connector)
 
@@ -484,7 +483,7 @@ class HTTPConnectorModCLI(pki.cli.CLI):
                 'verbose', 'debug', 'help'])
 
         except getopt.GetoptError as e:
-            print('ERROR: %s' % e)
+            print(f'ERROR: {e}')
             self.print_help()
             sys.exit(1)
 
@@ -553,7 +552,7 @@ class HTTPConnectorModCLI(pki.cli.CLI):
                 sys.exit()
 
             else:
-                print('ERROR: Unknown option: %s' % o)
+                print(f'ERROR: Unknown option: {o}')
                 self.print_help()
                 sys.exit(1)
 
@@ -567,7 +566,7 @@ class HTTPConnectorModCLI(pki.cli.CLI):
         instance = pki.server.instance.PKIServerFactory.create(instance_name)
 
         if not instance.exists():
-            print('ERROR: invalid instance: %s' % instance_name)
+            print(f'ERROR: invalid instance: {instance_name}')
             sys.exit(1)
 
         instance.load()
@@ -576,7 +575,7 @@ class HTTPConnectorModCLI(pki.cli.CLI):
         connector = server_config.get_connector(name)
 
         if connector is None:
-            raise KeyError('Connector not found: %s' % name)
+            raise KeyError(f'Connector not found: {name}')
 
         if connector_type == 'JSS':
 
@@ -652,7 +651,7 @@ class SSLHostCLI(pki.cli.CLI):
     def print_sslhost(sslhost):
 
         hostName = sslhost.get('hostName', '_default_')
-        print('  Hostname: %s' % hostName)
+        print(f'  Hostname: {hostName}')
 
         HTTPConnectorCLI.print_param(
             sslhost, 'sslProtocol', 'SSL Protocol')
@@ -688,7 +687,7 @@ class SSLHostAddCLI(pki.cli.CLI):
                 'verbose', 'debug', 'help'])
 
         except getopt.GetoptError as e:
-            print('ERROR: %s' % e)
+            print(f'ERROR: {e}')
             self.print_help()
             sys.exit(1)
 
@@ -721,7 +720,7 @@ class SSLHostAddCLI(pki.cli.CLI):
                 sys.exit()
 
             else:
-                print('ERROR: Unknown option: %s' % o)
+                print(f'ERROR: Unknown option: {o}')
                 self.print_help()
                 sys.exit(1)
 
@@ -738,7 +737,7 @@ class SSLHostAddCLI(pki.cli.CLI):
         instance = pki.server.instance.PKIServerFactory.create(instance_name)
 
         if not instance.exists():
-            print('ERROR: invalid instance: %s' % instance_name)
+            print(f'ERROR: invalid instance: {instance_name}')
             sys.exit(1)
 
         instance.load()
@@ -747,11 +746,11 @@ class SSLHostAddCLI(pki.cli.CLI):
         connector = server_config.get_connector(connector_name)
 
         if connector is None:
-            raise KeyError('Connector not found: %s' % connector_name)
+            raise KeyError(f'Connector not found: {connector_name}')
 
         try:
             server_config.get_sslhost(connector, hostname)
-            raise Exception('SSL host already exists: %s' % hostname)
+            raise Exception(f'SSL host already exists: {hostname}')
         except KeyError:
             pass
 
@@ -788,7 +787,7 @@ class SSLHostDeleteCLI(pki.cli.CLI):
                 'verbose', 'debug', 'help'])
 
         except getopt.GetoptError as e:
-            print('ERROR: %s' % e)
+            print(f'ERROR: {e}')
             self.print_help()
             sys.exit(1)
 
@@ -809,7 +808,7 @@ class SSLHostDeleteCLI(pki.cli.CLI):
                 sys.exit()
 
             else:
-                print('ERROR: Unknown option: %s' % o)
+                print(f'ERROR: Unknown option: {o}')
                 self.print_help()
                 sys.exit(1)
 
@@ -826,7 +825,7 @@ class SSLHostDeleteCLI(pki.cli.CLI):
         instance = pki.server.instance.PKIServerFactory.create(instance_name)
 
         if not instance.exists():
-            print('ERROR: Invalid instance: %s' % instance_name)
+            print(f'ERROR: Invalid instance: {instance_name}')
             sys.exit(1)
 
         instance.load()
@@ -835,7 +834,7 @@ class SSLHostDeleteCLI(pki.cli.CLI):
         connector = server_config.get_connector(connector_name)
 
         if connector is None:
-            raise KeyError('Connector not found: %s' % connector_name)
+            raise KeyError(f'Connector not found: {connector_name}')
 
         server_config.remove_sslhost(connector, hostname)
 
@@ -864,7 +863,7 @@ class SSLHostFindCLI(pki.cli.CLI):
                 'verbose', 'debug', 'help'])
 
         except getopt.GetoptError as e:
-            print('ERROR: %s' % e)
+            print(f'ERROR: {e}')
             self.print_help()
             sys.exit(1)
 
@@ -885,7 +884,7 @@ class SSLHostFindCLI(pki.cli.CLI):
                 sys.exit()
 
             else:
-                print('ERROR: Unknown option: %s' % o)
+                print(f'ERROR: Unknown option: {o}')
                 self.print_help()
                 sys.exit(1)
 
@@ -897,7 +896,7 @@ class SSLHostFindCLI(pki.cli.CLI):
         instance = pki.server.instance.PKIServerFactory.create(instance_name)
 
         if not instance.exists():
-            print('ERROR: Invalid instance: %s' % instance_name)
+            print(f'ERROR: Invalid instance: {instance_name}')
             sys.exit(1)
 
         instance.load()
@@ -906,11 +905,11 @@ class SSLHostFindCLI(pki.cli.CLI):
         connector = server_config.get_connector(connector_name)
 
         if connector is None:
-            raise KeyError('Connector not found: %s' % connector_name)
+            raise KeyError(f'Connector not found: {connector_name}')
 
         sslhosts = server_config.get_sslhosts(connector)
 
-        self.print_message('%s entries matched' % len(sslhosts))
+        self.print_message(f'{len(sslhosts)} entries matched')
 
         first = True
         for sslhost in sslhosts:

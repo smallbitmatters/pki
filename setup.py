@@ -39,8 +39,7 @@ def find_upgrade(origroot, destroot):
 
 
 upgrades = {}
-upgrades.update(find_upgrade('base/common/upgrade',
-                             'share/pki/upgrade'))
+upgrades |= find_upgrade('base/common/upgrade', 'share/pki/upgrade')
 upgrades.update(find_upgrade('base/server/upgrade',
                              'share/pki/server/upgrade'))
 

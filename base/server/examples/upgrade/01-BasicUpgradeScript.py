@@ -8,7 +8,7 @@ class BasicUpgradeScript(pki.server.upgrade.PKIServerUpgradeScriptlet):
         self.message = 'Basic upgrade script'
 
     def upgrade_instance(self, instance):
-        print('BasicUpgradeScript: Upgrading %s instance' % instance.name)
+        print(f'BasicUpgradeScript: Upgrading {instance.name} instance')
 
     def upgrade_subsystem(self, instance, subsystem):
-        print('BasicUpgradeScript: Upgrading %s subsystem' % subsystem.name)
+        print(f'BasicUpgradeScript: Upgrading {subsystem.name} subsystem')

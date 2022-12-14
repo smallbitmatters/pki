@@ -57,20 +57,20 @@ from pki.kra import KRAClient
 
 def print_key_request(request):
     """ Prints the relevant fields of a KeyRequestInfo object """
-    print("RequestURL: " + str(request.request_url))
-    print("RequestType: " + str(request.request_type))
-    print("RequestStatus: " + str(request.request_status))
-    print("KeyURL: " + str(request.key_url))
+    print(f"RequestURL: {str(request.request_url)}")
+    print(f"RequestType: {str(request.request_type)}")
+    print(f"RequestStatus: {str(request.request_status)}")
+    print(f"KeyURL: {str(request.key_url)}")
 
 
 def print_key_info(key_info):
     """ Prints the relevant fields of a KeyInfo object """
-    print("Key URL: " + str(key_info.key_url))
-    print("Client Key ID: " + str(key_info.client_key_id))
-    print("Algorithm: " + str(key_info.algorithm))
-    print("Status: " + str(key_info.status))
-    print("Owner Name: " + str(key_info.owner_name))
-    print("Size: " + str(key_info.size))
+    print(f"Key URL: {str(key_info.key_url)}")
+    print(f"Client Key ID: {str(key_info.client_key_id)}")
+    print(f"Algorithm: {str(key_info.algorithm)}")
+    print(f"Status: {str(key_info.status)}")
+    print(f"Owner Name: {str(key_info.owner_name)}")
+    print(f"Size: {str(key_info.size)}")
     if key_info.public_key is not None:
         print("Public key: ")
         print()
@@ -80,13 +80,13 @@ def print_key_info(key_info):
 
 def print_key_data(key_data):
     """ Prints the relevant fields of a KeyData object """
-    print("Key Algorithm: " + str(key_data.algorithm))
-    print("Key Size: " + str(key_data.size))
-    print("Nonce Data: " + b64encode(key_data.nonce_data))
+    print(f"Key Algorithm: {str(key_data.algorithm)}")
+    print(f"Key Size: {str(key_data.size)}")
+    print(f"Nonce Data: {b64encode(key_data.nonce_data)}")
     print("Wrapped Private Data: " +
           b64encode(key_data.encrypted_data))
     if key_data.data is not None:
-        print("Private Data: " + b64encode(key_data.data))
+        print(f"Private Data: {b64encode(key_data.data)}")
 
 
 def run_test(protocol, hostname, port, client_cert, certdb_dir,
@@ -100,7 +100,7 @@ def run_test(protocol, hostname, port, client_cert, certdb_dir,
     # TODO: Load transport cert
     transport_nick = "kra transport cert"
     transport_cert = None
-    print("Subject DN: " + transport_cert.subject_dn)
+    print(f"Subject DN: {transport_cert.subject_dn}")
     print(transport_cert.encoded)
 
     # create kraclient
@@ -142,7 +142,7 @@ def run_test(protocol, hostname, port, client_cert, certdb_dir,
                                                 size=key_size,
                                                 usages=usages)
     print_key_request(response.request_info)
-    print("Request ID is " + response.request_info.get_request_id())
+    print(f"Request ID is {response.request_info.get_request_id()}")
     key_id = response.get_key_id()
 
     # Test 5: Confirm the key_id matches
@@ -163,7 +163,7 @@ def run_test(protocol, hostname, port, client_cert, certdb_dir,
     session_key = crypto.generate_session_key()
     wrapped_session_key = crypto.asymmetric_wrap(session_key,
                                                  keyclient.transport_cert)
-    print("My key id is " + str(key_id))
+    print(f"My key id is {str(key_id)}")
     key_data = keyclient.retrieve_key(
         key_id, trans_wrapped_session_key=wrapped_session_key)
     print_key_data(key_data)
@@ -179,11 +179,11 @@ def run_test(protocol, hostname, port, client_cert, certdb_dir,
 
     # Test 8 - Confirm that keys returned are the same
     if key1 == key2:
-        print("Success: The keys returned match! Key = " + str(key1))
+        print(f"Success: The keys returned match! Key = {str(key1)}")
     else:
         print("Failure: The returned keys do not match!")
-        print("key1: " + key1)
-        print("key2: " + key2)
+        print(f"key1: {key1}")
+        print(f"key2: {key2}")
 
     # Test 10 = test BadRequestException on create()
     print("Trying to generate a new symkey with the same client ID")
@@ -193,24 +193,27 @@ def run_test(protocol, hostname, port, client_cert, certdb_dir,
                                          size=key_size,
                                          usages=usages)
     except pki.BadRequestException as exc:
-        print("BadRequestException thrown - Code:" + str(exc.code) +
-              " Message: " + exc.message)
+        print(
+            f"BadRequestException thrown - Code:{str(exc.code)} Message: {exc.message}"
+        )
 
     # Test 11 - Test RequestNotFoundException on get_request_info
     print("Try to list a nonexistent request")
     try:
         keyclient.get_request_info('200000034')
     except pki.RequestNotFoundException as exc:
-        print("RequestNotFoundException thrown - Code:" + str(exc.code) +
-              " Message: " + exc.message)
+        print(
+            f"RequestNotFoundException thrown - Code:{str(exc.code)} Message: {exc.message}"
+        )
 
     # Test 12 - Test exception on retrieve_key.
     print("Try to retrieve an invalid key")
     try:
         keyclient.retrieve_key('2000003434')
     except pki.KeyNotFoundException as exc:
-        print("KeyNotFoundException thrown - Code:" + str(exc.code) +
-              " Message: " + exc.message)
+        print(
+            f"KeyNotFoundException thrown - Code:{str(exc.code)} Message: {exc.message}"
+        )
 
     # Test 13 = getKeyInfo
     print("Get key info for existing key")
@@ -218,7 +221,7 @@ def run_test(protocol, hostname, port, client_cert, certdb_dir,
     print_key_info(key_info)
 
     # Test 14: get the active key
-    print("Get the active key for client id: " + client_key_id)
+    print(f"Get the active key for client id: {client_key_id}")
     key_info = keyclient.get_active_key_info(client_key_id)
     print_key_info(key_info)
 
@@ -232,8 +235,9 @@ def run_test(protocol, hostname, port, client_cert, certdb_dir,
     try:
         keyclient.get_key_info('200004556')
     except pki.KeyNotFoundException as exc:
-        print("KeyNotFoundException thrown - Code:" + str(exc.code) +
-              " Message: " + exc.message)
+        print(
+            f"KeyNotFoundException thrown - Code:{str(exc.code)} Message: {exc.message}"
+        )
 
     # Test 17: Get key info for non-existent active key
     print("Get non-existent active key")
@@ -241,8 +245,9 @@ def run_test(protocol, hostname, port, client_cert, certdb_dir,
         key_info = keyclient.get_active_key_info(client_key_id)
         print_key_info(key_info)
     except pki.ResourceNotFoundException as exc:
-        print("ResourceNotFoundException thrown - Code: " + str(exc.code) +
-              "Message: " + exc.message)
+        print(
+            f"ResourceNotFoundException thrown - Code: {str(exc.code)}Message: {exc.message}"
+        )
 
     # Test 18: Generate a symmetric key with default parameters
     client_key_id = "Vek #3" + time.strftime('%c')
@@ -251,7 +256,7 @@ def run_test(protocol, hostname, port, client_cert, certdb_dir,
 
     # Test 19: Try to archive key
     print("try to archive key")
-    print("key to archive: " + key1)
+    print(f"key to archive: {key1}")
     client_key_id = "Vek #4" + time.strftime('%c')
 
     response = keyclient.archive_key(client_key_id,
@@ -286,8 +291,9 @@ def run_test(protocol, hostname, port, client_cert, certdb_dir,
         )
         print_key_request(response.request_info)
     except pki.BadRequestException as exc:
-        print("BadRequestException thrown - Code:" + str(exc.code) +
-              " Message: " + exc.message)
+        print(
+            f"BadRequestException thrown - Code:{str(exc.code)} Message: {exc.message}"
+        )
 
     # Test 21: Get key information of the newly generated asymmetric keys
     print("Retrieving key information")
@@ -311,7 +317,7 @@ def main(argv):
         opts, _ = getopt.getopt(argv[1:], 'h:P:p:n:d:c:', ['help'])
 
     except getopt.GetoptError as e:
-        print('ERROR: ' + str(e))
+        print(f'ERROR: {str(e)}')
         usage()
         sys.exit(1)
 
@@ -321,35 +327,34 @@ def main(argv):
     client_cert = 'kraagent.pem'
 
     for o, a in opts:
-        if o == '-P':
+        if o == '--help':
+            usage()
+            sys.exit()
+
+        elif o == '-P':
             protocol = a
 
         elif o == '-h':
             hostname = a
 
-        elif o == '-p':
-            port = a
-
         elif o == '-n':
             client_cert = a
 
-        elif o == '--help':
-            usage()
-            sys.exit()
+        elif o == '-p':
+            port = a
 
         else:
-            print('ERROR: unknown option ' + o)
+            print(f'ERROR: unknown option {o}')
             usage()
             sys.exit(1)
 
     certdb_dir = tempfile.mkdtemp(prefix='pki-kra-test-')
-    print("NSS database dir: %s" % certdb_dir)
+    print(f"NSS database dir: {certdb_dir}")
 
     certdb_password = ''.join(
-        random.choice(
-            string.ascii_letters +
-            string.digits) for i in range(8))
-    print("NSS database password: %s" % certdb_password)
+        random.choice(string.ascii_letters + string.digits) for _ in range(8)
+    )
+    print(f"NSS database password: {certdb_password}")
 
     try:
         run_test(

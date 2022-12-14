@@ -62,16 +62,13 @@ class VersionInfo(Command):
         except IOError:
             pass
         else:
-            self.rpm_version = "%s.%s" % (version, release)
+            self.rpm_version = f"{version}.{release}"
 
     def run(self):
-        if self.rpm_version is not None:
-            self.distribution.metadata.version = self.rpm_version
-            self.rewrite_setup_py()
-        else:
-            raise ValueError(
-                'Cannot load version from {}'.format(self.specfile)
-            )
+        if self.rpm_version is None:
+            raise ValueError(f'Cannot load version from {self.specfile}')
+        self.distribution.metadata.version = self.rpm_version
+        self.rewrite_setup_py()
 
     def get_version(self):
         version = release = None
@@ -96,7 +93,7 @@ class VersionInfo(Command):
             lines = list(f)
         for i, line in enumerate(lines):
             if line.startswith('VERSION ='):
-                lines[i] = "VERSION = '{}'\n".format(self.rpm_version)
+                lines[i] = f"VERSION = '{self.rpm_version}'\n"
         with open(__file__, 'w') as f:
             f.write(''.join(lines))
 

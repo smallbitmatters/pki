@@ -86,18 +86,15 @@ class Tomcat(object):
         output = subprocess.check_output([Tomcat.EXECUTABLE, 'version'])
         output = output.decode('utf-8')
 
-        # find "Server version: Apache Tomcat/<version>"
-        match = re.search(
+        if match := re.search(
             r'^Server version: *.*/(.+)$',
             output,
-            re.MULTILINE  # pylint: disable=no-member
-        )
-
-        if not match:
+            re.MULTILINE,  # pylint: disable=no-member
+        ):
+                # return version
+            return pki.util.Version(match[1])
+        else:
             raise Exception('Unable to determine Tomcat version')
-
-        # return version
-        return pki.util.Version(match.group(1))
 
 
 @functools.total_ordering
@@ -132,14 +129,18 @@ class PKIServer(object):
         return hash(self.name)
 
     def __eq__(self, other):
-        if not isinstance(other, PKIServer):
-            return NotImplemented
-        return self.name == other.name
+        return (
+            self.name == other.name
+            if isinstance(other, PKIServer)
+            else NotImplemented
+        )
 
     def __lt__(self, other):
-        if not isinstance(other, PKIServer):
-            return NotImplemented
-        return self.name < other.name
+        return (
+            self.name < other.name
+            if isinstance(other, PKIServer)
+            else NotImplemented
+        )
 
     @property
     def base_dir(self):
@@ -211,7 +212,7 @@ class PKIServer(object):
 
     @property
     def service_name(self):
-        return '%s@%s' % (self.type, self.name)
+        return f'{self.type}@{self.name}'
 
     @property
     def service_conf(self):
@@ -253,10 +254,10 @@ class PKIServer(object):
 
     def validate(self):
         if not self.exists():
-            raise pki.PKIException('Invalid instance: ' + self.name, None)
+            raise pki.PKIException(f'Invalid instance: {self.name}', None)
 
     def is_active(self):
-        cmd = ['systemctl', '--quiet', 'is-active', '%s.service' % self.service_name]
+        cmd = ['systemctl', '--quiet', 'is-active', f'{self.service_name}.service']
         logger.debug('Command: %s', ' '.join(cmd))
         rc = subprocess.call(cmd)
         return rc == 0
@@ -330,14 +331,14 @@ grant codeBase "file:%s" {
 };
 ''' % filepath
 
-        filename = '%s/custom.policy' % self.conf_dir
+        filename = f'{self.conf_dir}/custom.policy'
         if os.path.exists(filename):
             logger.info('Appending %s', filename)
             content += '\n'
             with open(filename, 'r', encoding='utf-8') as f:
                 content += f.read()
 
-        filename = '%s/catalina.policy' % self.conf_dir
+        filename = f'{self.conf_dir}/catalina.policy'
         logger.info('Storing %s', filename)
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(content)
@@ -386,7 +387,7 @@ grant codeBase "file:%s" {
 
     def start(self, wait=False, max_wait=60, timeout=None):
 
-        cmd = ['systemctl', 'start', '%s.service' % self.service_name]
+        cmd = ['systemctl', 'start', f'{self.service_name}.service']
         logger.debug('Command: %s', ' '.join(cmd))
         subprocess.check_call(cmd)
 
@@ -395,7 +396,7 @@ grant codeBase "file:%s" {
 
         logger.info('Waiting for PKI server to start')
 
-        start_time = datetime.datetime.today()
+        start_time = datetime.datetime.now()
         started = False
         counter = 0
 
@@ -407,11 +408,11 @@ grant codeBase "file:%s" {
             except requests.exceptions.SSLError as e:
                 max_retry_error = e.args[0]
                 reason = getattr(max_retry_error, 'reason')
-                raise Exception('Server unreachable due to SSL error: %s' % reason) from e
+                raise Exception(f'Server unreachable due to SSL error: {reason}') from e
 
             except pki.RETRYABLE_EXCEPTIONS as e:
 
-                stop_time = datetime.datetime.today()
+                stop_time = datetime.datetime.now()
                 counter = (stop_time - start_time).total_seconds()
 
                 if max_wait is not None and counter >= max_wait:
@@ -426,7 +427,7 @@ grant codeBase "file:%s" {
 
     def stop(self, wait=False, max_wait=60, timeout=None):
 
-        cmd = ['systemctl', 'stop', '%s.service' % self.service_name]
+        cmd = ['systemctl', 'stop', f'{self.service_name}.service']
         logger.debug('Command: %s', ' '.join(cmd))
         subprocess.check_call(cmd)
 
@@ -435,7 +436,7 @@ grant codeBase "file:%s" {
 
         logger.info('Waiting for PKI server to stop')
 
-        start_time = datetime.datetime.today()
+        start_time = datetime.datetime.now()
         stopped = False
         counter = 0
 
@@ -447,14 +448,14 @@ grant codeBase "file:%s" {
             except requests.exceptions.SSLError as e:
                 max_retry_error = e.args[0]
                 reason = getattr(max_retry_error, 'reason')
-                raise Exception('Server unreachable due to SSL error: %s' % reason) from e
+                raise Exception(f'Server unreachable due to SSL error: {reason}') from e
 
             except requests.exceptions.ConnectionError:
                 stopped = True
 
             except pki.RETRYABLE_EXCEPTIONS as e:
 
-                stop_time = datetime.datetime.today()
+                stop_time = datetime.datetime.now()
                 counter = (stop_time - start_time).total_seconds()
 
                 if max_wait is not None and counter >= max_wait:
@@ -472,12 +473,12 @@ grant codeBase "file:%s" {
         self.start(wait=wait, max_wait=max_wait, timeout=timeout)
 
     def enable(self):
-        cmd = ['systemctl', 'enable', '%s.service' % self.service_name]
+        cmd = ['systemctl', 'enable', f'{self.service_name}.service']
         logger.debug('Command: %s', ' '.join(cmd))
         subprocess.check_call(cmd)
 
     def disable(self):
-        cmd = ['systemctl', 'disable', '%s.service' % self.service_name]
+        cmd = ['systemctl', 'disable', f'{self.service_name}.service']
         logger.debug('Command: %s', ' '.join(cmd))
         subprocess.check_call(cmd)
 
@@ -526,9 +527,9 @@ grant codeBase "file:%s" {
         security_manager = self.config.get('SECURITY_MANAGER')
 
         classpath = [
-            Tomcat.SHARE_DIR + '/bin/bootstrap.jar',
-            Tomcat.SHARE_DIR + '/bin/tomcat-juli.jar',
-            '/usr/lib/java/commons-daemon.jar'
+            f'{Tomcat.SHARE_DIR}/bin/bootstrap.jar',
+            f'{Tomcat.SHARE_DIR}/bin/tomcat-juli.jar',
+            '/usr/lib/java/commons-daemon.jar',
         ]
 
         cmd = prefix
@@ -543,40 +544,49 @@ grant codeBase "file:%s" {
             cmd.extend(['jdb'])
 
         else:
-            cmd.extend([java_home + '/bin/java'])
-
-            # add JVM options as in /etc/tomcat/conf.d/java-9-start-up-parameters.conf
-            cmd.extend([
-                '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
-                '--add-opens', 'java.base/java.io=ALL-UNNAMED',
-                '--add-opens', 'java.base/java.util=ALL-UNNAMED',
-                '--add-opens', 'java.base/java.util.concurrent=ALL-UNNAMED',
-                '--add-opens', 'java.rmi/sun.rmi.transport=ALL-UNNAMED',
-            ])
-
+            cmd.extend(
+                [
+                    f'{java_home}/bin/java',
+                    '--add-opens',
+                    'java.base/java.lang=ALL-UNNAMED',
+                    '--add-opens',
+                    'java.base/java.io=ALL-UNNAMED',
+                    '--add-opens',
+                    'java.base/java.util=ALL-UNNAMED',
+                    '--add-opens',
+                    'java.base/java.util.concurrent=ALL-UNNAMED',
+                    '--add-opens',
+                    'java.rmi/sun.rmi.transport=ALL-UNNAMED',
+                ]
+            )
         if agentpath:
-            cmd.extend(['-agentpath:%s' % agentpath])
+            cmd.extend([f'-agentpath:{agentpath}'])
 
         elif os.path.exists('/usr/lib/abrt-java-connector/libabrt-java-connector.so'):
             cmd.extend([
                 '-agentpath:/usr/lib/abrt-java-connector/libabrt-java-connector.so=abrt=on,'
             ])
 
-        cmd.extend([
-            '-classpath', os.pathsep.join(classpath),
-            '-Dcatalina.base=' + self.base_dir,
-            '-Dcatalina.home=' + Tomcat.SHARE_DIR,
-            '-Djava.endorsed.dirs=',
-            '-Djava.io.tmpdir=' + self.temp_dir,
-            '-Djava.util.logging.config.file=' + self.logging_properties,
-            '-Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager'
-        ])
+        cmd.extend(
+            [
+                '-classpath',
+                os.pathsep.join(classpath),
+                f'-Dcatalina.base={self.base_dir}',
+                f'-Dcatalina.home={Tomcat.SHARE_DIR}',
+                '-Djava.endorsed.dirs=',
+                f'-Djava.io.tmpdir={self.temp_dir}',
+                f'-Djava.util.logging.config.file={self.logging_properties}',
+                '-Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager',
+            ]
+        )
 
         if security_manager == 'true':
-            cmd.extend([
-                '-Djava.security.manager',
-                '-Djava.security.policy==' + self.catalina_policy
-            ])
+            cmd.extend(
+                [
+                    '-Djava.security.manager',
+                    f'-Djava.security.policy=={self.catalina_policy}',
+                ]
+            )
 
         if java_opts:
             cmd.extend(java_opts.split())
@@ -730,7 +740,7 @@ grant codeBase "file:%s" {
         self.copy(service_conf, self.service_conf, force=force)
 
         with open(self.service_conf, 'a', encoding='utf-8') as f:
-            print('CATALINA_BASE="%s"' % self.base_dir, file=f)
+            print(f'CATALINA_BASE="{self.base_dir}"', file=f)
 
     def create_conf_dir(self, force=False):
 
@@ -888,19 +898,12 @@ grant codeBase "file:%s" {
             if not filename.endswith('.xml'):
                 continue
 
-            webapp = {}
-
             webapp_id = filename[:-4]
-            webapp['id'] = webapp_id
-
+            webapp = {'id': webapp_id}
             parts = webapp_id.split('##')
 
             name = parts[0]
-            if name == 'ROOT':
-                webapp['path'] = '/'
-            else:
-                webapp['path'] = '/' + name.replace('#', '/')
-
+            webapp['path'] = '/' if name == 'ROOT' else '/' + name.replace('#', '/')
             if len(parts) > 1:
                 webapp['version'] = parts[1]
 
@@ -920,10 +923,8 @@ grant codeBase "file:%s" {
     def is_deployed(self, webapp_id):
 
         context_xml = os.path.join(
-            self.conf_dir,
-            'Catalina',
-            'localhost',
-            webapp_id + '.xml')
+            self.conf_dir, 'Catalina', 'localhost', f'{webapp_id}.xml'
+        )
 
         return os.path.exists(context_xml)
 
@@ -982,10 +983,8 @@ grant codeBase "file:%s" {
         """
 
         context_xml = os.path.join(
-            self.conf_dir,
-            'Catalina',
-            'localhost',
-            webapp_id + '.xml')
+            self.conf_dir, 'Catalina', 'localhost', f'{webapp_id}.xml'
+        )
 
         # read deployment descriptor
         document = etree.parse(descriptor, parser)
@@ -1009,12 +1008,8 @@ grant codeBase "file:%s" {
 
         logger.info('Waiting for web application to start')
 
-        if webapp_id == 'ROOT':
-            path = '/'
-        else:
-            path = '/' + webapp_id
-
-        start_time = datetime.datetime.today()
+        path = '/' if webapp_id == 'ROOT' else f'/{webapp_id}'
+        start_time = datetime.datetime.now()
         started = False
         counter = 0
 
@@ -1026,11 +1021,11 @@ grant codeBase "file:%s" {
             except requests.exceptions.SSLError as e:
                 max_retry_error = e.args[0]
                 reason = getattr(max_retry_error, 'reason')
-                raise Exception('Server unreachable due to SSL error: %s' % reason) from e
+                raise Exception(f'Server unreachable due to SSL error: {reason}') from e
 
             except pki.RETRYABLE_EXCEPTIONS as e:
 
-                stop_time = datetime.datetime.today()
+                stop_time = datetime.datetime.now()
                 counter = (stop_time - start_time).total_seconds()
 
                 if max_wait is not None and counter >= max_wait:
@@ -1052,10 +1047,8 @@ grant codeBase "file:%s" {
             timeout=None):
 
         context_xml = os.path.join(
-            self.conf_dir,
-            'Catalina',
-            'localhost',
-            webapp_id + '.xml')
+            self.conf_dir, 'Catalina', 'localhost', f'{webapp_id}.xml'
+        )
 
         logger.info('Removing %s', context_xml)
         pki.util.remove(context_xml, force=force)
@@ -1065,12 +1058,8 @@ grant codeBase "file:%s" {
 
         logger.info('Waiting for web application to stop')
 
-        if webapp_id == 'ROOT':
-            path = '/'
-        else:
-            path = '/' + webapp_id
-
-        start_time = datetime.datetime.today()
+        path = '/' if webapp_id == 'ROOT' else f'/{webapp_id}'
+        start_time = datetime.datetime.now()
         stopped = False
         counter = 0
 
@@ -1082,11 +1071,11 @@ grant codeBase "file:%s" {
             except requests.exceptions.SSLError as e:
                 max_retry_error = e.args[0]
                 reason = getattr(max_retry_error, 'reason')
-                raise Exception('Server unreachable due to SSL error: %s' % reason) from e
+                raise Exception(f'Server unreachable due to SSL error: {reason}') from e
 
             except pki.RETRYABLE_EXCEPTIONS as e:
 
-                stop_time = datetime.datetime.today()
+                stop_time = datetime.datetime.now()
                 counter = (stop_time - start_time).total_seconds()
 
                 if max_wait is not None and counter >= max_wait:
@@ -1244,7 +1233,7 @@ grant codeBase "file:%s" {
         # find password in keyring
         try:
             keyring = Keyring()
-            key_name = self.name + '/' + name
+            key_name = f'{self.name}/{name}'
             password = keyring.get_password(key_name=key_name)
             self.passwords[name] = password
             return password
@@ -1253,7 +1242,7 @@ grant codeBase "file:%s" {
             logger.info('Password unavailable in Keyring.')
 
         # prompt for password if not found
-        password = getpass.getpass(prompt='Enter password for %s: ' % name)
+        password = getpass.getpass(prompt=f'Enter password for {name}: ')
         self.passwords[name] = password
 
         return password
@@ -1261,12 +1250,11 @@ grant codeBase "file:%s" {
     def get_token_password(self, token=pki.nssdb.INTERNAL_TOKEN_NAME):
 
         # determine the password name for the token
-        if not pki.nssdb.normalize_token(token):
-            name = pki.nssdb.INTERNAL_TOKEN_NAME
-
-        else:
-            name = 'hardware-%s' % token
-
+        name = (
+            f'hardware-{token}'
+            if pki.nssdb.normalize_token(token)
+            else pki.nssdb.INTERNAL_TOKEN_NAME
+        )
         # find password in password.conf
         if name in self.passwords:
             return self.passwords[name]
@@ -1274,7 +1262,7 @@ grant codeBase "file:%s" {
         # find password in keyring
         try:
             keyring = Keyring()
-            key_name = self.name + '/' + name
+            key_name = f'{self.name}/{name}'
             password = keyring.get_password(key_name=key_name)
             self.passwords[name] = password
             return password
@@ -1283,7 +1271,7 @@ grant codeBase "file:%s" {
             logger.info('Password unavailable in Keyring.')
 
         # prompt for password if not found
-        password = getpass.getpass(prompt='Enter password for %s: ' % token)
+        password = getpass.getpass(prompt=f'Enter password for {token}: ')
         self.passwords[name] = password
 
         return password
@@ -1308,7 +1296,7 @@ grant codeBase "file:%s" {
         # Store SSL server cert nickname into server.xml
 
         if pki.nssdb.normalize_token(token):
-            fullname = token + ':' + nickname
+            fullname = f'{token}:{nickname}'
         else:
             fullname = nickname
 
@@ -1333,7 +1321,7 @@ grant codeBase "file:%s" {
         :returns: (subsystem_name, cert_tag)
         :rtype: (str, str)
         """
-        if cert_id == 'sslserver' or cert_id == 'subsystem':
+        if cert_id in ['sslserver', 'subsystem']:
             subsystem_name = None
             cert_tag = cert_id
         else:
@@ -1348,10 +1336,7 @@ grant codeBase "file:%s" {
             return None
 
         ca_cert = os.path.join(client_nssdb, "ca.crt")
-        if os.path.exists(ca_cert):
-            return ca_cert
-
-        return None
+        return ca_cert if os.path.exists(ca_cert) else None
 
     @staticmethod
     def setup_password_authentication(username, password, subsystem_name='ca', secure_port='8443',
@@ -1442,14 +1427,14 @@ grant codeBase "file:%s" {
             # Use the same password file for the generated pk12 file
             cmd_generate_pk12.extend(['-k', client_nssdb_pass_file,
                                       '-w', client_nssdb_pass_file])
-            cmd_generate_pem.extend(['-passin', 'file:' + client_nssdb_pass_file])
-            cmd_generate_ca.extend(['-passin', 'file:' + client_nssdb_pass_file])
+            cmd_generate_pem.extend(['-passin', f'file:{client_nssdb_pass_file}'])
+            cmd_generate_ca.extend(['-passin', f'file:{client_nssdb_pass_file}'])
         else:
             # Use the same password for the generated pk12 file
             cmd_generate_pk12.extend(['-K', client_nssdb_pass,
                                       '-W', client_nssdb_pass])
-            cmd_generate_pem.extend(['-passin', 'pass:' + client_nssdb_pass])
-            cmd_generate_ca.extend(['-passin', 'pass:' + client_nssdb_pass])
+            cmd_generate_pem.extend(['-passin', f'pass:{client_nssdb_pass}'])
+            cmd_generate_ca.extend(['-passin', f'pass:{client_nssdb_pass}'])
 
         # Generate temp_auth_p12 file
         res_pk12 = subprocess.check_output(cmd_generate_pk12,
@@ -1503,24 +1488,23 @@ grant codeBase "file:%s" {
         # Instantiate the CertClient
         cert_client = pki.cert.CertClient(connection)
 
-        inputs = dict()
-        inputs['serial_num'] = serial
-
+        inputs = {'serial_num': serial}
         # request: CertRequestInfo object for request generated.
         # cert: CertData object for certificate generated (if any)
         ret = cert_client.enroll_cert(inputs=inputs, profile_id='caManualRenewal')
 
-        request_data = ret[0].request
         cert_data = ret[0].cert
 
+        request_data = ret[0].request
         logger.info('Request ID: %s', request_data.request_id)
         logger.info('Request Status: %s', request_data.request_status)
         logger.debug('request_data: %s', request_data)
         logger.debug('cert_data: %s', cert_data)
 
         if not cert_data:
-            raise PKIServerException('Unable to renew system '
-                                     'certificate for serial: %s' % serial)
+            raise PKIServerException(
+                f'Unable to renew system certificate for serial: {serial}'
+            )
 
         # store cert_id for usage later
         cert_serial_number = cert_data.serial_number
@@ -1562,40 +1546,26 @@ grant codeBase "file:%s" {
 
             logger.debug('Parsing: %s', line)
 
-            event_match = event_pattern.match(line)
-            if event_match:
-
-                name = event_match.group(1)
+            if event_match := event_pattern.match(line):
+                name = event_match[1]
                 logger.info('Found event %s', name)
 
-                event = {}
-                event['name'] = name
-                event['subsystems'] = []
-                event['enabled_by_default'] = False
-
+                event = {'name': name, 'subsystems': [], 'enabled_by_default': False}
                 events[name] = event
                 continue
 
-            subsystems_match = subsystems_pattern.match(line)
-            if subsystems_match:
-
-                subsystems = subsystems_match.group(1)
+            if subsystems_match := subsystems_pattern.match(line):
+                subsystems = subsystems_match[1]
                 logger.info('Found subsystems %s', subsystems)
 
                 subsystems = subsystems.replace(' ', '').split(',')
                 event['subsystems'] = subsystems
 
-            enabled_match = enabled_pattern.match(line)
-            if enabled_match:
-
-                enabled = enabled_match.group(1)
+            if enabled_match := enabled_pattern.match(line):
+                enabled = enabled_match[1]
                 logger.info('Found enabled by default %s', enabled)
 
-                if enabled == 'Yes':
-                    event['enabled_by_default'] = True
-                else:
-                    event['enabled_by_default'] = False
-
+                event['enabled_by_default'] = enabled == 'Yes'
         logger.info('Events:')
 
         for name, event in events.items():
@@ -1646,9 +1616,7 @@ class ServerConfig(object):
 
         for connector in self.get_connectors():
 
-            sslEnabled = connector.get('SSLEnabled')
-
-            if sslEnabled:
+            if sslEnabled := connector.get('SSLEnabled'):
                 return connector.get('port')
 
         return None
@@ -1676,7 +1644,7 @@ class ServerConfig(object):
             if c == className:
                 return listener
 
-        raise KeyError('Listener not found: %s' % className)
+        raise KeyError(f'Listener not found: {className}')
 
     def create_listener(self, className):
 
@@ -1759,7 +1727,7 @@ class ServerConfig(object):
         connector = self.get_connector(name)
 
         if connector is None:
-            raise KeyError('Connector not found: %s' % name)
+            raise KeyError(f'Connector not found: {name}')
 
         service = connector.getparent()
         service.remove(connector)
@@ -1775,7 +1743,7 @@ class ServerConfig(object):
             if h == hostname:
                 return sslhost
 
-        raise KeyError('SSL host not found: %s' % hostname)
+        raise KeyError(f'SSL host not found: {hostname}')
 
     def create_sslhost(self, connector, hostname='_default_'):
 
@@ -1803,7 +1771,7 @@ class ServerConfig(object):
             if t == certType:
                 return sslcert
 
-        raise KeyError('SSL certificate not found: %s' % certType)
+        raise KeyError(f'SSL certificate not found: {certType}')
 
     def create_sslcert(self, sslhost, certType):
 

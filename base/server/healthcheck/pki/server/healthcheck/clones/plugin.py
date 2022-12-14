@@ -73,7 +73,7 @@ class ClonesPlugin(Plugin):
             status = root.findtext('Status')
 
         else:
-            raise Exception('Unsupported content-type: %s' % content_type)
+            raise Exception(f'Unsupported content-type: {content_type}')
 
         logger.info('Status: %s', status)
         return status
@@ -129,8 +129,7 @@ class ClonesPlugin(Plugin):
         sec_domain = None
         sechost = None
         secport = None
-        ca_subsystem = self.instance.get_subsystem('ca')
-        if ca_subsystem:
+        if ca_subsystem := self.instance.get_subsystem('ca'):
             # make sure this CA is the security domain
             service_host = ca_subsystem.config.get('machineName')
             server_config = self.instance.get_server_config()

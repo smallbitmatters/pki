@@ -81,7 +81,7 @@ def replace_params(line, params=None):
             value = str(params[name])
 
             # replace parameter with value, keep the rest of the line
-            line = line[0:begin] + value + line[end + 1:]
+            line = line[:begin] + value + line[end + 1:]
 
             # calculate the new end position
             end = begin + len(value) + 1
@@ -208,12 +208,7 @@ def copyfile(source, dest, slots=None, params=None, uid=None, gid=None, mode=Non
     # source is a file
     stat = os.stat(source)
 
-    if not slots and not params:
-        # if no substitution is required, copy the file
-        shutil.copyfile(source, dest)
-        os.utime(dest, (stat.st_atime, stat.st_mtime))
-
-    else:
+    if slots or params:
         # otherwise, customize the file
         if slots is None:
             slots = {}
@@ -227,6 +222,11 @@ def copyfile(source, dest, slots=None, params=None, uid=None, gid=None, mode=Non
                         line = line.replace(slots[slot], params[slot])
                 line = replace_params(line, params)
                 f.write(line)
+
+    else:
+        # if no substitution is required, copy the file
+        shutil.copyfile(source, dest)
+        os.utime(dest, (stat.st_atime, stat.st_mtime))
 
     if uid is None:
         uid = stat.st_uid
@@ -463,11 +463,7 @@ def copytree(src, dst, symlinks=False, ignore=None):
     Consider this example code rather than the ultimate tool.
     """
     names = os.listdir(src)
-    if ignore is not None:
-        ignored_names = ignore(src, names)
-    else:
-        ignored_names = set()
-
+    ignored_names = ignore(src, names) if ignore is not None else set()
     # PATCH:  ONLY execute 'os.makedirs(dst)' if the top-level
     #         destination directory does NOT exist!
     if not os.path.exists(dst):
@@ -496,10 +492,7 @@ def copytree(src, dst, symlinks=False, ignore=None):
     try:
         shutil.copystat(src, dst)
     except OSError as why:
-        if WindowsError is not None and isinstance(why, WindowsError):
-            # Copying file access times may fail on Windows
-            pass
-        else:
+        if WindowsError is None or not isinstance(why, WindowsError):
             errors.extend((src, dst, str(why)))
     if errors:
         raise Error(errors)
@@ -509,8 +502,7 @@ def read_environment_files(env_file_list=None):
     if env_file_list is None:
         env_file_list = DEFAULT_PKI_ENV_LIST
 
-    file_command = ' && '.join(
-        'source {}'.format(env_file) for env_file in env_file_list)
+    file_command = ' && '.join(f'source {env_file}' for env_file in env_file_list)
     file_command += ' && env'
 
     command = [
@@ -558,11 +550,11 @@ def read_text(message,
 
     if default is not None:
         if len(default) == 0:
-            message = message + ' []'
+            message = f'{message} []'
         elif password:
-            message = message + ' [********]'
+            message = f'{message} [********]'
         else:
-            message = message + ' [' + default + ']'
+            message = f'{message} [{default}]'
 
     message = message + delimiter + ' '
 
@@ -572,11 +564,7 @@ def read_text(message,
             options[i] = options[i].lower()  # normalize options
 
     while True:
-        if password:
-            value = getpass.getpass(message)
-        else:
-            value = input(message)
-
+        value = getpass.getpass(message) if password else input(message)
         if not value:  # empty value
             if not required:
                 return default
@@ -612,11 +600,11 @@ class Version(object):
             match = re.match(r'^(\d+)\.(\d+)\.(\d+)', obj)
 
             if match is None:
-                raise Exception('Unable to parse version number: %s' % obj)
+                raise Exception(f'Unable to parse version number: {obj}')
 
-            self.major = int(match.group(1))
-            self.minor = int(match.group(2))
-            self.patch = int(match.group(3))
+            self.major = int(match[1])
+            self.minor = int(match[2])
+            self.patch = int(match[3])
 
         elif isinstance(obj, Version):
 
@@ -625,7 +613,7 @@ class Version(object):
             self.patch = obj.patch
 
         else:
-            raise Exception('Unsupported version type: %s' % type(obj))
+            raise Exception(f'Unsupported version type: {type(obj)}')
 
     # release is ignored in comparisons
     def __eq__(self, other):
@@ -640,13 +628,12 @@ class Version(object):
         if self.major < other.major:
             return True
 
-        if self.major == other.major and self.minor < other.minor:
-            return True
+        if self.major == other.major:
+            if self.minor < other.minor:
+                return True
 
-        if (self.major == other.major and
-                self.minor == other.minor and
-                self.patch < other.patch):
-            return True
+            if self.minor == other.minor and self.patch < other.patch:
+                return True
 
         return False
 

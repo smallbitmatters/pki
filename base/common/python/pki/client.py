@@ -166,17 +166,17 @@ class PKIConnection:
         self.port = port
         self.subsystem = subsystem
 
-        self.rootURI = self.protocol + '://' + self.hostname
+        self.rootURI = f'{self.protocol}://{self.hostname}'
 
         if self.port is not None:
-            self.rootURI = self.rootURI + ':' + self.port
+            self.rootURI = f'{self.rootURI}:{self.port}'
 
         if subsystem is not None:
             logger.warning(
                 '%s:%s: The subsystem in PKIConnection.__init__() has been deprecated '
                 '(https://github.com/dogtagpki/pki/wiki/PKI-10.8-Python-Changes).',
                 inspect.stack()[1].filename, inspect.stack()[1].lineno)
-            self.serverURI = self.rootURI + '/' + subsystem
+            self.serverURI = f'{self.rootURI}/{subsystem}'
         else:
             self.serverURI = self.rootURI
 
@@ -218,7 +218,7 @@ class PKIConnection:
         """
         if pem_cert_path is None:
             raise Exception("No path for the certificate specified.")
-        if len(str(pem_cert_path)) == 0:
+        if not str(pem_cert_path):
             raise Exception("No path for the certificate specified.")
         if pem_key_path is not None:
             self.session.cert = (pem_cert_path, pem_key_path)

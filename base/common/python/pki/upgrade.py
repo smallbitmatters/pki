@@ -32,9 +32,9 @@ import pki.util
 
 DEFAULT_VERSION = '10.0.0'
 
-UPGRADE_DIR = pki.SHARE_DIR + '/upgrade'
-BACKUP_DIR = pki.LOG_DIR + '/upgrade'
-SYSTEM_TRACKER = pki.CONF_DIR + '/pki.version'
+UPGRADE_DIR = f'{pki.SHARE_DIR}/upgrade'
+BACKUP_DIR = f'{pki.LOG_DIR}/upgrade'
+SYSTEM_TRACKER = f'{pki.CONF_DIR}/pki.version'
 
 logger = logging.getLogger(__name__)
 
@@ -75,25 +75,20 @@ class PKIUpgradeTracker(object):
 
     def show(self):
 
-        print('%s:' % self.name)
+        print(f'{self.name}:')
 
         version = self.get_version()
-        print('  Configuration version: %s' % version)
+        print(f'  Configuration version: {version}')
 
         index = self.get_index()
         if index > 0:
-            print('  Last completed scriptlet: %s' % index)
+            print(f'  Last completed scriptlet: {index}')
 
     def get_index(self):
 
         self.properties.read()
 
-        index = self.properties.get(self.index_key)
-
-        if index:
-            return int(index)
-
-        return 0
+        return int(index) if (index := self.properties.get(self.index_key)) else 0
 
     def set_index(self, index):
 
@@ -136,8 +131,7 @@ class PKIUpgradeTracker(object):
 
         self.properties.read()
 
-        version = self.properties.get(self.version_key)
-        if version:
+        if version := self.properties.get(self.version_key):
             return pki.util.Version(version)
 
         return pki.util.Version(DEFAULT_VERSION)
@@ -187,7 +181,7 @@ class PKIUpgradeScriptlet(object):
         self.upgrader = None
 
     def get_backup_dir(self):
-        return BACKUP_DIR + '/' + str(self.version) + '/' + str(self.index)
+        return f'{BACKUP_DIR}/{str(self.version)}/{str(self.index)}'
 
     def upgrade_system(self):
         # Callback method to upgrade the system.
@@ -296,8 +290,8 @@ class PKIUpgrader(object):
             if not match:
                 continue
 
-            index = int(match.group(1))
-            classname = match.group(2)
+            index = int(match[1])
+            classname = match[2]
 
             # load scriptlet class
             variables = {}
@@ -380,7 +374,7 @@ class PKIUpgrader(object):
     def record(self, scriptlet, path):
 
         backup_dir = scriptlet.get_backup_dir()
-        filename = backup_dir + '/newfiles'
+        filename = f'{backup_dir}/newfiles'
 
         self.touch(filename)
         with open(filename, 'a', encoding='utf-8') as f:
@@ -401,7 +395,7 @@ class PKIUpgrader(object):
 
         # otherwise, keep a copy
 
-        oldfiles = backup_dir + '/oldfiles'
+        oldfiles = f'{backup_dir}/oldfiles'
         self.makedirs(oldfiles, exist_ok=True)
 
         dest = oldfiles + path
@@ -490,7 +484,7 @@ class PKIUpgrader(object):
         if not os.path.exists(backup_dir):
             return
 
-        oldfiles = backup_dir + '/oldfiles'
+        oldfiles = f'{backup_dir}/oldfiles'
         if os.path.exists(oldfiles):
 
             # restore all backed up files
@@ -512,7 +506,7 @@ class PKIUpgrader(object):
                     logger.info('Restoring %s', targetfile)
                     self.copyfile(sourcefile, targetfile, force=True)
 
-        newfiles = backup_dir + '/newfiles'
+        newfiles = f'{backup_dir}/newfiles'
         if os.path.exists(newfiles):
 
             # get paths that did not exist before upgrade

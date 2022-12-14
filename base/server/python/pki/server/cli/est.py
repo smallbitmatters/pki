@@ -92,7 +92,7 @@ class ESTCreateCLI(pki.cli.CLI):
         instance = pki.server.instance.PKIServerFactory.create(instance_name)
 
         if not instance.exists():
-            raise Exception('Invalid instance: %s' % instance_name)
+            raise Exception(f'Invalid instance: {instance_name}')
 
         instance.load()
 
@@ -160,7 +160,7 @@ class ESTRemoveCLI(pki.cli.CLI):
         instance = pki.server.instance.PKIServerFactory.create(instance_name)
 
         if not instance.exists():
-            raise Exception('Invalid instance: %s' % instance_name)
+            raise Exception(f'Invalid instance: {instance_name}')
 
         instance.load()
 

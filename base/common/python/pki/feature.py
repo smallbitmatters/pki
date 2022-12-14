@@ -115,7 +115,7 @@ class FeatureClient(object):
         self.feature_url = '/rest/config/features'
 
         if connection.subsystem is None:
-            self.feature_url = '/ca' + self.feature_url
+            self.feature_url = f'/ca{self.feature_url}'
 
         self.headers = {'Content-type': 'application/json',
                         'Accept': 'application/json'}
@@ -126,7 +126,7 @@ class FeatureClient(object):
         if feature_id is None:
             raise ValueError("Feature ID must be specified")
 
-        url = self.feature_url + '/' + str(feature_id)
+        url = f'{self.feature_url}/{str(feature_id)}'
         r = self.connection.get(url, self.headers)
         return Feature.from_json(r.json())
 
@@ -155,13 +155,13 @@ def main():
     print("-----------------------")
     features = feature_client.list_features()
     for feature in features.feature_list:
-        print(str(feature))
+        print(feature)
 
     # Get authority feature
     print("Getting authority feature")
     print("-------------------------")
     feature = feature_client.get_feature("authority")
-    print(str(feature))
+    print(feature)
 
     # Get non-existent feature
     print("Get non-existent feature")

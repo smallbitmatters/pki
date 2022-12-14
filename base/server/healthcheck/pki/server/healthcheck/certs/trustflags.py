@@ -24,8 +24,11 @@ class CASystemCertTrustFlagCheck(CertsPlugin):
     def check(self):
         if not self.instance.exists():
             logger.debug('Invalid instance: %s', self.instance.name)
-            yield Result(self, constants.CRITICAL,
-                         msg='Invalid PKI instance: %s' % self.instance.name)
+            yield Result(
+                self,
+                constants.CRITICAL,
+                msg=f'Invalid PKI instance: {self.instance.name}',
+            )
             return
 
         self.instance.load()
@@ -60,19 +63,24 @@ class CASystemCertTrustFlagCheck(CertsPlugin):
                     )
                 except Exception as e:  # pylint: disable=broad-except
                     logger.debug('Unable to load cert from NSSDB: %s', str(e))
-                    yield Result(self, constants.ERROR,
-                                 key=cert_id,
-                                 nssdbDir=self.instance.nssdb_dir,
-                                 msg='Unable to load cert from NSSDB: %s' % str(e))
+                    yield Result(
+                        self,
+                        constants.ERROR,
+                        key=cert_id,
+                        nssdbDir=self.instance.nssdb_dir,
+                        msg=f'Unable to load cert from NSSDB: {str(e)}',
+                    )
                     continue
             if cert_trust != expected_trust[cert_id]:
-                yield Result(self, constants.ERROR,
-                             cert_id=cert_id,
-                             nickname=cert['nickname'],
-                             token=cert['token'],
-                             cert_trust=cert_trust,
-                             msg='Incorrect NSS trust for %s. Got %s expected %s'
-                             % (cert['nickname'], cert_trust, expected_trust[cert_id]))
+                yield Result(
+                    self,
+                    constants.ERROR,
+                    cert_id=cert_id,
+                    nickname=cert['nickname'],
+                    token=cert['token'],
+                    cert_trust=cert_trust,
+                    msg=f"Incorrect NSS trust for {cert['nickname']}. Got {cert_trust} expected {expected_trust[cert_id]}",
+                )
             else:
                 yield Result(self, constants.SUCCESS,
                              cert_id=cert_id,
@@ -88,8 +96,11 @@ class KRASystemCertTrustFlagCheck(CertsPlugin):
     def check(self):
         if not self.instance.exists():
             logger.debug('Invalid instance: %s', self.instance.name)
-            yield Result(self, constants.CRITICAL,
-                         msg='Invalid PKI instance: %s' % self.instance.name)
+            yield Result(
+                self,
+                constants.CRITICAL,
+                msg=f'Invalid PKI instance: {self.instance.name}',
+            )
             return
 
         self.instance.load()
@@ -124,19 +135,24 @@ class KRASystemCertTrustFlagCheck(CertsPlugin):
                     )
                 except Exception as e:  # pylint: disable=broad-except
                     logger.debug('Unable to load cert from NSSDB: %s', str(e))
-                    yield Result(self, constants.ERROR,
-                                 key=cert_id,
-                                 nssdbDir=self.instance.nssdb_dir,
-                                 msg='Unable to load cert from NSSDB: %s' % str(e))
+                    yield Result(
+                        self,
+                        constants.ERROR,
+                        key=cert_id,
+                        nssdbDir=self.instance.nssdb_dir,
+                        msg=f'Unable to load cert from NSSDB: {str(e)}',
+                    )
                     continue
             if cert_trust != expected_trust[cert_id]:
-                yield Result(self, constants.ERROR,
-                             cert_id=cert_id,
-                             nickname=cert['nickname'],
-                             token=cert['token'],
-                             cert_trust=cert_trust,
-                             msg='Incorrect NSS trust for %s. Got %s expected %s'
-                                 % (cert['nickname'], cert_trust, expected_trust[cert_id]))
+                yield Result(
+                    self,
+                    constants.ERROR,
+                    cert_id=cert_id,
+                    nickname=cert['nickname'],
+                    token=cert['token'],
+                    cert_trust=cert_trust,
+                    msg=f"Incorrect NSS trust for {cert['nickname']}. Got {cert_trust} expected {expected_trust[cert_id]}",
+                )
             else:
                 yield Result(self, constants.SUCCESS,
                              cert_id=cert_id,
@@ -152,8 +168,11 @@ class OCSPSystemCertTrustFlagCheck(CertsPlugin):
     def check(self):
         if not self.instance.exists():
             logger.debug('Invalid instance: %s', self.instance.name)
-            yield Result(self, constants.CRITICAL,
-                         msg='Invalid PKI instance: %s' % self.instance.name)
+            yield Result(
+                self,
+                constants.CRITICAL,
+                msg=f'Invalid PKI instance: {self.instance.name}',
+            )
             return
 
         self.instance.load()
@@ -187,19 +206,24 @@ class OCSPSystemCertTrustFlagCheck(CertsPlugin):
                     )
                 except Exception as e:  # pylint: disable=broad-except
                     logger.debug('Unable to load cert from NSSDB: %s', str(e))
-                    yield Result(self, constants.ERROR,
-                                 key=cert_id,
-                                 nssdbDir=self.instance.nssdb_dir,
-                                 msg='Unable to load cert from NSSDB: %s' % str(e))
+                    yield Result(
+                        self,
+                        constants.ERROR,
+                        key=cert_id,
+                        nssdbDir=self.instance.nssdb_dir,
+                        msg=f'Unable to load cert from NSSDB: {str(e)}',
+                    )
                     continue
             if cert_trust != expected_trust[cert_id]:
-                yield Result(self, constants.ERROR,
-                             cert_id=cert_id,
-                             nickname=cert['nickname'],
-                             token=cert['token'],
-                             cert_trust=cert_trust,
-                             msg='Incorrect NSS trust for %s. Got %s expected %s'
-                                 % (cert['nickname'], cert_trust, expected_trust[cert_id]))
+                yield Result(
+                    self,
+                    constants.ERROR,
+                    cert_id=cert_id,
+                    nickname=cert['nickname'],
+                    token=cert['token'],
+                    cert_trust=cert_trust,
+                    msg=f"Incorrect NSS trust for {cert['nickname']}. Got {cert_trust} expected {expected_trust[cert_id]}",
+                )
             else:
                 yield Result(self, constants.SUCCESS,
                              cert_id=cert_id,
@@ -215,8 +239,11 @@ class TKSSystemCertTrustFlagCheck(CertsPlugin):
     def check(self):
         if not self.instance.exists():
             logger.debug('Invalid instance: %s', self.instance.name)
-            yield Result(self, constants.CRITICAL,
-                         msg='Invalid PKI instance: %s' % self.instance.name)
+            yield Result(
+                self,
+                constants.CRITICAL,
+                msg=f'Invalid PKI instance: {self.instance.name}',
+            )
             return
 
         self.instance.load()
@@ -249,19 +276,24 @@ class TKSSystemCertTrustFlagCheck(CertsPlugin):
                     )
                 except Exception as e:  # pylint: disable=broad-except
                     logger.debug('Unable to load cert from NSSDB: %s', str(e))
-                    yield Result(self, constants.ERROR,
-                                 key=cert_id,
-                                 nssdbDir=self.instance.nssdb_dir,
-                                 msg='Unable to load cert from NSSDB: %s' % str(e))
+                    yield Result(
+                        self,
+                        constants.ERROR,
+                        key=cert_id,
+                        nssdbDir=self.instance.nssdb_dir,
+                        msg=f'Unable to load cert from NSSDB: {str(e)}',
+                    )
                     continue
             if cert_trust != expected_trust[cert_id]:
-                yield Result(self, constants.ERROR,
-                             cert_id=cert_id,
-                             nickname=cert['nickname'],
-                             token=cert['token'],
-                             cert_trust=cert_trust,
-                             msg='Incorrect NSS trust for %s. Got %s expected %s'
-                                 % (cert['nickname'], cert_trust, expected_trust[cert_id]))
+                yield Result(
+                    self,
+                    constants.ERROR,
+                    cert_id=cert_id,
+                    nickname=cert['nickname'],
+                    token=cert['token'],
+                    cert_trust=cert_trust,
+                    msg=f"Incorrect NSS trust for {cert['nickname']}. Got {cert_trust} expected {expected_trust[cert_id]}",
+                )
             else:
                 yield Result(self, constants.SUCCESS,
                              cert_id=cert_id,
@@ -277,8 +309,11 @@ class TPSSystemCertTrustFlagCheck(CertsPlugin):
     def check(self):
         if not self.instance.exists():
             logger.debug('Invalid instance: %s', self.instance.name)
-            yield Result(self, constants.CRITICAL,
-                         msg='Invalid PKI instance: %s' % self.instance.name)
+            yield Result(
+                self,
+                constants.CRITICAL,
+                msg=f'Invalid PKI instance: {self.instance.name}',
+            )
             return
 
         self.instance.load()
@@ -311,19 +346,24 @@ class TPSSystemCertTrustFlagCheck(CertsPlugin):
                     )
                 except Exception as e:  # pylint: disable=broad-except
                     logger.debug('Unable to load cert from NSSDB: %s', str(e))
-                    yield Result(self, constants.ERROR,
-                                 key=cert_id,
-                                 nssdbDir=self.instance.nssdb_dir,
-                                 msg='Unable to load cert from NSSDB: %s' % str(e))
+                    yield Result(
+                        self,
+                        constants.ERROR,
+                        key=cert_id,
+                        nssdbDir=self.instance.nssdb_dir,
+                        msg=f'Unable to load cert from NSSDB: {str(e)}',
+                    )
                     continue
             if cert_trust != expected_trust[cert_id]:
-                yield Result(self, constants.ERROR,
-                             cert_id=cert_id,
-                             nickname=cert['nickname'],
-                             token=cert['token'],
-                             cert_trust=cert_trust,
-                             msg='Incorrect NSS trust for %s. Got %s expected %s'
-                                 % (cert['nickname'], cert_trust, expected_trust[cert_id]))
+                yield Result(
+                    self,
+                    constants.ERROR,
+                    cert_id=cert_id,
+                    nickname=cert['nickname'],
+                    token=cert['token'],
+                    cert_trust=cert_trust,
+                    msg=f"Incorrect NSS trust for {cert['nickname']}. Got {cert_trust} expected {expected_trust[cert_id]}",
+                )
             else:
                 yield Result(self, constants.SUCCESS,
                              cert_id=cert_id,

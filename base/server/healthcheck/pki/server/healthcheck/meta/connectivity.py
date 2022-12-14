@@ -20,8 +20,11 @@ class DogtagCACertsConnectivityCheck(MetaPlugin):
     def check(self):
         if not self.instance.exists():
             logger.debug('Invalid instance: %s', self.instance.name)
-            yield Result(self, constants.CRITICAL,
-                         msg='Invalid PKI instance: %s' % self.instance.name)
+            yield Result(
+                self,
+                constants.CRITICAL,
+                msg=f'Invalid PKI instance: {self.instance.name}',
+            )
             return
 
         self.instance.load()
@@ -47,8 +50,7 @@ class DogtagCACertsConnectivityCheck(MetaPlugin):
 
                 cert_client = CertClient(connection)
                 cert = cert_client.list_certs(size=1)
-                cert_info = cert.cert_data_info_list[0]
-                if cert_info:
+                if cert_info := cert.cert_data_info_list[0]:
                     # All we care is whether the serial_number is not NONE
                     if cert_info.serial_number:
                         logger.info("Serial number of retrieved cert: %s", cert_info.serial_number)
@@ -75,11 +77,14 @@ class DogtagCACertsConnectivityCheck(MetaPlugin):
 
         except BaseException as e:
             logger.error("Internal server error %s", e)
-            yield Result(self, constants.CRITICAL,
-                         msg="Internal server error. Is your CA subsystem and "
-                             "LDAP database up?",
-                         instance_name=self.instance.name,
-                         exception="%s" % e)
+            yield Result(
+                self,
+                constants.CRITICAL,
+                msg="Internal server error. Is your CA subsystem and "
+                "LDAP database up?",
+                instance_name=self.instance.name,
+                exception=f"{e}",
+            )
 
 
 @registry
@@ -92,8 +97,11 @@ class DogtagKRAConnectivityCheck(MetaPlugin):
     def check(self):
         if not self.instance.exists():
             logger.debug('Invalid instance: %s', self.instance.name)
-            yield Result(self, constants.CRITICAL,
-                         msg='Invalid PKI instance: %s' % self.instance.name)
+            yield Result(
+                self,
+                constants.CRITICAL,
+                msg=f'Invalid PKI instance: {self.instance.name}',
+            )
             return
 
         self.instance.load()
@@ -119,13 +127,7 @@ class DogtagKRAConnectivityCheck(MetaPlugin):
 
                 system_cert_client = SystemCertClient(connection)
 
-                # This gets the KRA cert from CS.cfg via REST API. In future, the system
-                # certs will be moved into LDAP. This means that even if LDAP is down
-                # there will be a SUCCESSFUL response if KRA is running.
-                transport_cert = system_cert_client.get_transport_cert()
-
-                if transport_cert:
-
+                if transport_cert := system_cert_client.get_transport_cert():
                     if transport_cert.serial_number:
                         logger.info("Serial number of retrieved transport cert: %s",
                                     transport_cert.serial_number)
@@ -153,11 +155,14 @@ class DogtagKRAConnectivityCheck(MetaPlugin):
 
         except BaseException as e:
             logger.error("Internal server error %s", e)
-            yield Result(self, constants.CRITICAL,
-                         msg="Internal server error. Is your KRA subsystem and "
-                             "LDAP database up?",
-                         instance_name=self.instance.name,
-                         exception="%s" % e)
+            yield Result(
+                self,
+                constants.CRITICAL,
+                msg="Internal server error. Is your KRA subsystem and "
+                "LDAP database up?",
+                instance_name=self.instance.name,
+                exception=f"{e}",
+            )
 
 
 @registry
@@ -171,8 +176,11 @@ class DogtagOCSPConnectivityCheck(MetaPlugin):
     def check(self):
         if not self.instance.exists():
             logger.debug('Invalid instance: %s', self.instance.name)
-            yield Result(self, constants.CRITICAL,
-                         msg='Invalid PKI instance: %s' % self.instance.name)
+            yield Result(
+                self,
+                constants.CRITICAL,
+                msg=f'Invalid PKI instance: {self.instance.name}',
+            )
             return
 
         self.instance.load()
@@ -201,11 +209,14 @@ class DogtagOCSPConnectivityCheck(MetaPlugin):
 
         except BaseException as e:
             logger.error("Internal server error %s", e)
-            yield Result(self, constants.CRITICAL,
-                         msg="Internal server error. Is your OCSP subsystem and "
-                             "LDAP database up?",
-                         instance_name=self.instance.name,
-                         exception="%s" % e)
+            yield Result(
+                self,
+                constants.CRITICAL,
+                msg="Internal server error. Is your OCSP subsystem and "
+                "LDAP database up?",
+                instance_name=self.instance.name,
+                exception=f"{e}",
+            )
 
 
 @registry
@@ -219,8 +230,11 @@ class DogtagTKSConnectivityCheck(MetaPlugin):
     def check(self):
         if not self.instance.exists():
             logger.debug('Invalid instance: %s', self.instance.name)
-            yield Result(self, constants.CRITICAL,
-                         msg='Invalid PKI instance: %s' % self.instance.name)
+            yield Result(
+                self,
+                constants.CRITICAL,
+                msg=f'Invalid PKI instance: {self.instance.name}',
+            )
             return
 
         self.instance.load()
@@ -249,11 +263,14 @@ class DogtagTKSConnectivityCheck(MetaPlugin):
 
         except BaseException as e:
             logger.error("Internal server error %s", e)
-            yield Result(self, constants.CRITICAL,
-                         msg="Internal server error. Is your TKS subsystem and "
-                             "LDAP database up?",
-                         instance_name=self.instance.name,
-                         exception="%s" % e)
+            yield Result(
+                self,
+                constants.CRITICAL,
+                msg="Internal server error. Is your TKS subsystem and "
+                "LDAP database up?",
+                instance_name=self.instance.name,
+                exception=f"{e}",
+            )
 
 
 @registry
@@ -267,8 +284,11 @@ class DogtagTPSConnectivityCheck(MetaPlugin):
     def check(self):
         if not self.instance.exists():
             logger.debug('Invalid instance: %s', self.instance.name)
-            yield Result(self, constants.CRITICAL,
-                         msg='Invalid PKI instance: %s' % self.instance.name)
+            yield Result(
+                self,
+                constants.CRITICAL,
+                msg=f'Invalid PKI instance: {self.instance.name}',
+            )
             return
 
         self.instance.load()
@@ -297,8 +317,11 @@ class DogtagTPSConnectivityCheck(MetaPlugin):
 
         except BaseException as e:
             logger.error("Internal server error %s", e)
-            yield Result(self, constants.CRITICAL,
-                         msg="Internal server error. Is your TPS subsystem and "
-                             "LDAP database up?",
-                         instance_name=self.instance.name,
-                         exception="%s" % e)
+            yield Result(
+                self,
+                constants.CRITICAL,
+                msg="Internal server error. Is your TPS subsystem and "
+                "LDAP database up?",
+                instance_name=self.instance.name,
+                exception=f"{e}",
+            )
