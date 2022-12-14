@@ -59,40 +59,33 @@ class CertCLI(pki.cli.CLI):
 
     @staticmethod
     def print_system_cert(cert, show_all=False):
-        print('  Cert ID: %s' % cert['id'])
-        print('  Nickname: %s' % cert['nickname'])
+        print(f"  Cert ID: {cert['id']}")
+        print(f"  Nickname: {cert['nickname']}")
 
-        token = cert.get('token')
-        if token:
-            print('  Token: %s' % token)
+        if token := cert.get('token'):
+            print(f'  Token: {token}')
 
-        serial_number = cert.get('serial_number')
-        if serial_number:
-            print('  Serial Number: %s' % hex(serial_number))
+        if serial_number := cert.get('serial_number'):
+            print(f'  Serial Number: {hex(serial_number)}')
 
-        subject = cert.get('subject')
-        if subject:
-            print('  Subject DN: %s' % subject)
+        if subject := cert.get('subject'):
+            print(f'  Subject DN: {subject}')
 
-        issuer = cert.get('issuer')
-        if issuer:
-            print('  Issuer DN: %s' % issuer)
+        if issuer := cert.get('issuer'):
+            print(f'  Issuer DN: {issuer}')
 
-        not_before = cert.get('not_before')
-        if not_before:
-            print('  Not Valid Before: %s' % CertCLI.convert_millis_to_date(not_before))
+        if not_before := cert.get('not_before'):
+            print(f'  Not Valid Before: {CertCLI.convert_millis_to_date(not_before)}')
 
-        not_after = cert.get('not_after')
-        if not_after:
-            print('  Not Valid After: %s' % CertCLI.convert_millis_to_date(not_after))
+        if not_after := cert.get('not_after'):
+            print(f'  Not Valid After: {CertCLI.convert_millis_to_date(not_after)}')
 
-        trust_flags = cert.get('trust_flags')
-        if trust_flags:
-            print('  Trust Flags: %s' % trust_flags)
+        if trust_flags := cert.get('trust_flags'):
+            print(f'  Trust Flags: {trust_flags}')
 
         if show_all:
-            print('  Certificate: %s' % cert['data'])
-            print('  Request: %s' % cert['request'])
+            print(f"  Certificate: {cert['data']}")
+            print(f"  Request: {cert['request']}")
 
     @staticmethod
     def convert_millis_to_date(millis):
@@ -169,8 +162,8 @@ class CertFindCLI(pki.cli.CLI):
             # Iterate on all subsystem's system certificate to prepend subsystem name to the ID
             for cert in certs:
 
-                if cert['id'] != 'sslserver' and cert['id'] != 'subsystem':
-                    cert['id'] = subsystem.name + '_' + cert['id']
+                if cert['id'] not in ['sslserver', 'subsystem']:
+                    cert['id'] = f'{subsystem.name}_' + cert['id']
 
                 # Append only unique certificates to other subsystem certificate list
                 if cert['id'] in results:
@@ -391,9 +384,7 @@ class CertUpdateCLI(pki.cli.CLI):
             logger.error('No CA subsystem in instance %s.', instance_name)
             sys.exit(1)
 
-        results = ca.find_cert_requests(cert=data)
-
-        if results:
+        if results := ca.find_cert_requests(cert=data):
             cert_request = results[-1]
             request = cert_request['request']
 
@@ -411,7 +402,7 @@ class CertUpdateCLI(pki.cli.CLI):
 
         instance.cert_update_config(cert_id, subsystem_cert)
 
-        self.print_message('Updated "%s" system certificate' % cert_id)
+        self.print_message(f'Updated "{cert_id}" system certificate')
 
 
 class CertCreateCLI(pki.cli.CLI):
@@ -559,12 +550,15 @@ class CertCreateCLI(pki.cli.CLI):
             with open(agent_password_file, encoding='utf-8') as f:
                 agent_password = f.read().strip()
 
-        if not temp_cert:
-            # For permanent certificate, password of either NSS DB OR agent is required.
-            if not client_nssdb_password and not client_nssdb_pass_file and not agent_password:
-                logger.error('NSS database or agent password is required.')
-                self.print_help()
-                sys.exit(1)
+        if (
+            not temp_cert
+            and not client_nssdb_password
+            and not client_nssdb_pass_file
+            and not agent_password
+        ):
+            logger.error('NSS database or agent password is required.')
+            self.print_help()
+            sys.exit(1)
 
         cert_id = args[0]
 

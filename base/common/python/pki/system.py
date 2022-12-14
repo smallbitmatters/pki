@@ -113,8 +113,9 @@ class SecurityDomainSubsystem(object):
 
             return host
 
-        raise Exception('Unable to find security domain host: %s:%s' %
-                        (hostname, secure_port))
+        raise Exception(
+            f'Unable to find security domain host: {hostname}:{secure_port}'
+        )
 
     @classmethod
     def from_json(cls, json_value):
@@ -250,9 +251,9 @@ class SecurityDomainClient(object):
         self.install_token_url = '/rest/securityDomain/installToken'
 
         if connection.subsystem is None:
-            self.domain_info_url = '/ca' + self.domain_info_url
-            self.domain_xml_url = '/ca' + self.domain_xml_url
-            self.install_token_url = '/ca' + self.install_token_url
+            self.domain_info_url = f'/ca{self.domain_info_url}'
+            self.domain_xml_url = f'/ca{self.domain_xml_url}'
+            self.install_token_url = f'/ca{self.install_token_url}'
 
     def get_security_domain_info(self):
         logger.warning(
@@ -273,8 +274,7 @@ class SecurityDomainClient(object):
             'Accept': 'application/json'
         }
         response = self.connection.get(self.domain_info_url, headers=headers)
-        info = DomainInfo.from_json(response.json())
-        return info
+        return DomainInfo.from_json(response.json())
 
     def get_old_domain_info(self):
         """
@@ -367,8 +367,8 @@ class SystemConfigClient(object):
             if subsystem is None:
                 raise Exception('Missing subsystem for SystemConfigClient')
 
-            self.create_request_id_url = '/' + subsystem + self.create_request_id_url
-            self.create_cert_id_url = '/' + subsystem + self.create_cert_id_url
+            self.create_request_id_url = f'/{subsystem}{self.create_request_id_url}'
+            self.create_cert_id_url = f'/{subsystem}{self.create_cert_id_url}'
 
     def createRequestID(self, request):
         """
@@ -419,10 +419,10 @@ class SystemStatusClient(object):
         self.connection = connection
 
         if connection.subsystem is not None:
-            self.get_status_url = '/admin/%s/getStatus' % connection.subsystem
+            self.get_status_url = f'/admin/{connection.subsystem}/getStatus'
 
         elif subsystem is not None:
-            self.get_status_url = '/%s/admin/%s/getStatus' % (subsystem, subsystem)
+            self.get_status_url = f'/{subsystem}/admin/{subsystem}/getStatus'
 
         else:
             raise Exception('Missing subsystem for SystemStatusClient')

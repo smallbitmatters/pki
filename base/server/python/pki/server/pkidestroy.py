@@ -109,8 +109,8 @@ def main(argv):
     interactive = False
 
     # Only run this program as "root".
-    if not os.geteuid() == 0:
-        sys.exit("'%s' must be run as root!" % argv[0])
+    if os.geteuid() != 0:
+        sys.exit(f"'{argv[0]}' must be run as root!")
 
     while True:
 
@@ -133,25 +133,24 @@ def main(argv):
             config.pki_deployed_instance_name = \
                 str(args.pki_deployed_instance_name).strip('[\']')
 
-        if interactive:
-            print()
-            parser.indent = 0
+        if not interactive:
+            break
 
-            begin = parser.read_text(
-                'Begin uninstallation (Yes/No/Quit)',
-                options=['Yes', 'Y', 'No', 'N', 'Quit', 'Q'],
-                sign='?', allow_empty=False, case_sensitive=False).lower()
+        print()
+        parser.indent = 0
 
-            print()
+        begin = parser.read_text(
+            'Begin uninstallation (Yes/No/Quit)',
+            options=['Yes', 'Y', 'No', 'N', 'Quit', 'Q'],
+            sign='?', allow_empty=False, case_sensitive=False).lower()
 
-            if begin == 'q' or begin == 'quit':
-                print("Uninstallation canceled.")
-                sys.exit(0)
+        print()
 
-            elif begin == 'y' or begin == 'yes':
-                break
+        if begin in ['q', 'quit']:
+            print("Uninstallation canceled.")
+            sys.exit(0)
 
-        else:
+        elif begin in ['y', 'yes']:
             break
 
     #    '-u'
@@ -228,7 +227,7 @@ def main(argv):
         group=deployer.mdict['pki_group'])
 
     if args.log_file:
-        print('Uninstallation log: %s' % args.log_file)
+        print(f'Uninstallation log: {args.log_file}')
 
     if args.log_file:
         pkilogging.enable_pki_logger(args.log_file)
@@ -236,8 +235,9 @@ def main(argv):
     logger.debug(log.PKI_DICTIONARY_MASTER)
     logger.debug(pkilogging.log_format(parser.mdict))
 
-    print("Uninstalling " + deployer.subsystem_name + " from " +
-          deployed_pki_instance_path + ".")
+    print(
+        f"Uninstalling {deployer.subsystem_name} from {deployed_pki_instance_path}."
+    )
 
     # Process the various "scriptlets" to remove the specified PKI subsystem.
     pki_subsystem_scriptlets = parser.mdict['destroy_scriplets'].split()
@@ -246,8 +246,9 @@ def main(argv):
         for scriptlet_name in pki_subsystem_scriptlets:
 
             scriptlet_module = __import__(
-                "pki.server.deployment.scriptlets." + scriptlet_name,
-                fromlist=[scriptlet_name])
+                f"pki.server.deployment.scriptlets.{scriptlet_name}",
+                fromlist=[scriptlet_name],
+            )
 
             scriptlet = scriptlet_module.PkiScriptlet()
             scriptlet.deployer = deployer
@@ -257,7 +258,7 @@ def main(argv):
     except subprocess.CalledProcessError as e:
         log_error_details()
         print()
-        print("Uninstallation failed: Command failed: %s" % ' '.join(e.cmd))
+        print(f"Uninstallation failed: Command failed: {' '.join(e.cmd)}")
         if e.output:
             print(e.output)
         print()
@@ -266,7 +267,7 @@ def main(argv):
     except Exception as e:  # pylint: disable=broad-except
         log_error_details()
         print()
-        print("Uninstallation failed: %s" % e)
+        print(f"Uninstallation failed: {e}")
         print()
         sys.exit(1)
 

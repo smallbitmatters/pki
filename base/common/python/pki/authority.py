@@ -130,7 +130,7 @@ class AuthorityClient(object):
         self.ca_url = '/rest/authorities'
 
         if connection.subsystem is None:
-            self.ca_url = '/ca' + self.ca_url
+            self.ca_url = f'/ca{self.ca_url}'
 
     @pki.handle_exceptions()
     def get_ca(self, aid):
@@ -138,7 +138,7 @@ class AuthorityClient(object):
         if aid is None:
             raise ValueError("Subordinate aid must be specified")
 
-        url = self.ca_url + '/' + str(aid)
+        url = f'{self.ca_url}/{str(aid)}'
         headers = {'Content-type': 'application/json',
                    'Accept': 'application/json'}
         r = self.connection.get(url, headers=headers)
@@ -156,7 +156,7 @@ class AuthorityClient(object):
         if aid is None:
             raise ValueError("CA ID must be specified")
 
-        url = '{}/{}/cert'.format(self.ca_url, str(aid))
+        url = f'{self.ca_url}/{str(aid)}/cert'
 
         headers = {'Content-type': 'application/json'}
 
@@ -182,7 +182,7 @@ class AuthorityClient(object):
         if aid is None:
             raise ValueError("CA ID must be specified")
 
-        url = '{}/{}/chain'.format(self.ca_url, str(aid))
+        url = f'{self.ca_url}/{str(aid)}/chain'
 
         headers = {'Content-type': 'application/json'}
         if output_format == "PEM":
@@ -241,8 +241,7 @@ class AuthorityClient(object):
             create_request,
             headers=headers)
 
-        new_ca = AuthorityData.from_json(response.json())
-        return new_ca
+        return AuthorityData.from_json(response.json())
 
     @pki.handle_exceptions()
     def enable_ca(self, aid):
@@ -253,7 +252,7 @@ class AuthorityClient(object):
         if aid is None:
             raise ValueError("CA ID must be specified")
 
-        url = '{}/{}/enable'.format(self.ca_url, str(aid))
+        url = f'{self.ca_url}/{str(aid)}/enable'
 
         headers = {'Content-type': 'application/json',
                    'Accept': 'application/json'}
@@ -269,7 +268,7 @@ class AuthorityClient(object):
         if aid is None:
             raise ValueError("CA ID must be specified")
 
-        url = '{}/{}/disable'.format(self.ca_url, str(aid))
+        url = f'{self.ca_url}/{str(aid)}/disable'
         headers = {'Content-type': 'application/json',
                    'Accept': 'application/json'}
 
@@ -284,7 +283,7 @@ class AuthorityClient(object):
         if aid is None:
             raise ValueError("CA ID must be specified")
 
-        url = '{}/{}'.format(self.ca_url, str(aid))
+        url = f'{self.ca_url}/{str(aid)}'
         headers = {'Content-type': 'application/json',
                    'Accept': 'application/json'}
 
@@ -297,38 +296,26 @@ encoder.NOTYPES['AuthorityData'] = AuthorityData
 def issue_cert_using_authority(cert_client, authority_id):
     print("Issuing Cert using subordinate CA")
     print("---------------------------------")
-    print("aid: " + authority_id)
+    print(f"aid: {authority_id}")
 
-    inputs = dict()
-    inputs['cert_request_type'] = 'crmf'
-    inputs['cert_request'] = "MIIBpDCCAaAwggEGAgUA5n9VYTCBx4ABAqUOMAwxCjAIBgN" \
-                             "VBAMTAXimgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAK" \
-                             "/SmUVoUjBtqHNw/e3OoCSXw42pdQSR53/eYJWpf7nyTbZ9U" \
-                             "uIhGfXOtxy5vRetmDHE9u0AopmuJbr1rL17/tSnDakpkE9u" \
-                             "mQ2lMOReLloSdX32w2xOeulUwh5BGbFpq10S0SvW1H93Vn0" \
-                             "eCy2aa4UtILNEsp7JJ3FnYJibfuMPAgMBAAGpEDAOBgNVHQ" \
-                             "8BAf8EBAMCBeAwMzAVBgkrBgEFBQcFAQEMCHJlZ1Rva2VuM" \
-                             "BoGCSsGAQUFBwUBAgwNYXV0aGVudGljYXRvcqGBkzANBgkq" \
-                             "hkiG9w0BAQUFAAOBgQCuywnrDk/wGwfbguw9oVs9gzFQwM4" \
-                             "zeFbk+z82G5CWoG/4mVOT5LPL5Q8iF+KfnaU9Qcu6zZPxW6" \
-                             "ZmDd8WpPJ+MTPyQl3Q5BfiKa4l5ra1NeqxMOlMiiupwINmm" \
-                             "7jd1KaA2eIjuyC8/gTaO4b14R6aRaOj+Scp9cNYbthA7REh" \
-                             "Jw=="
-    inputs['sn_uid'] = 'test12345'
-    inputs['sn_e'] = 'example@redhat.com'
-    inputs['sn_cn'] = 'TestUser'
-
+    inputs = {
+        'cert_request_type': 'crmf',
+        'cert_request': "MIIBpDCCAaAwggEGAgUA5n9VYTCBx4ABAqUOMAwxCjAIBgNVBAMTAXimgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAK/SmUVoUjBtqHNw/e3OoCSXw42pdQSR53/eYJWpf7nyTbZ9UuIhGfXOtxy5vRetmDHE9u0AopmuJbr1rL17/tSnDakpkE9umQ2lMOReLloSdX32w2xOeulUwh5BGbFpq10S0SvW1H93Vn0eCy2aa4UtILNEsp7JJ3FnYJibfuMPAgMBAAGpEDAOBgNVHQ8BAf8EBAMCBeAwMzAVBgkrBgEFBQcFAQEMCHJlZ1Rva2VuMBoGCSsGAQUFBwUBAgwNYXV0aGVudGljYXRvcqGBkzANBgkqhkiG9w0BAQUFAAOBgQCuywnrDk/wGwfbguw9oVs9gzFQwM4zeFbk+z82G5CWoG/4mVOT5LPL5Q8iF+KfnaU9Qcu6zZPxW6ZmDd8WpPJ+MTPyQl3Q5BfiKa4l5ra1NeqxMOlMiiupwINmm7jd1KaA2eIjuyC8/gTaO4b14R6aRaOj+Scp9cNYbthA7REhJw==",
+        'sn_uid': 'test12345',
+        'sn_e': 'example@redhat.com',
+        'sn_cn': 'TestUser',
+    }
     enrollment_results = cert_client.enroll_cert(
         'caUserCert', inputs, authority_id)
 
     for enrollment_result in enrollment_results:
         request_data = enrollment_result.request
         cert_data = enrollment_result.cert
-        print('Request ID: ' + request_data.request_id)
-        print('Request Status:' + request_data.request_status)
-        print('Serial Number: ' + cert_data.serial_number)
-        print('Issuer: ' + cert_data.issuer_dn)
-        print('Subject: ' + cert_data.subject_dn)
+        print(f'Request ID: {request_data.request_id}')
+        print(f'Request Status:{request_data.request_status}')
+        print(f'Serial Number: {cert_data.serial_number}')
+        print(f'Issuer: {cert_data.issuer_dn}')
+        print(f'Subject: {cert_data.subject_dn}')
         print('Pretty Print:')
         print(cert_data.pretty_repr)
 
@@ -351,11 +338,11 @@ def main():
     print("Creating a new top level CA")
     print("-----------------------------")
 
-    subca_subject = ('cn=subca ' + str(uuid.uuid4()) +
-                     ' signing cert, o=example.com')
+    subca_subject = f'cn=subca {str(uuid.uuid4())} signing cert, o=example.com'
 
-    sub_subca_subject = ('cn=subca2 ' + str(uuid.uuid4()) +
-                         ' signing cert, o=example.com')
+    sub_subca_subject = (
+        f'cn=subca2 {str(uuid.uuid4())} signing cert, o=example.com'
+    )
     authority_data = {
         'dn': subca_subject,
         'description': 'Test Top-level subordinate CA',
@@ -374,7 +361,7 @@ def main():
         if ca.is_host_authority:
             host_ca = ca
 
-    print(str(host_ca))
+    print(host_ca)
 
     # Create a sub CA
     print("Creating a new subordinate CA")
@@ -407,7 +394,7 @@ def main():
     print("-----------------------")
     authorities = ca_client.list_cas()
     for ca in authorities.ca_list:
-        print(str(ca))
+        print(ca)
 
     # Issue a cert using the sub-CA
     cert_client = cert.CertClient(connection)
@@ -459,7 +446,7 @@ def main():
 
     # Get sub-subca
     sub_subca = ca_client.get_ca(sub_subca.aid)
-    print(str(sub_subca))
+    print(sub_subca)
 
     # issue a cert using sub-subca
     print("Issuing a cert using disabled subca")

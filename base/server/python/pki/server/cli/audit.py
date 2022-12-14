@@ -69,24 +69,24 @@ class AuditCLI(pki.cli.CLI):
         logSigning = subsystem.config[name % 'logSigning'].lower() == 'true'
         signedAuditCertNickname = subsystem.config[name % 'signedAuditCertNickname']
 
-        print('  Enabled: %s' % enabled)
+        print(f'  Enabled: {enabled}')
 
-        print('  Log File: %s' % fileName)
-        print('  Buffer Size (bytes): %s' % bufferSize)
-        print('  Flush Interval (seconds): %s' % flushInterval)
+        print(f'  Log File: {fileName}')
+        print(f'  Buffer Size (bytes): {bufferSize}')
+        print(f'  Flush Interval (seconds): {flushInterval}')
 
-        print('  Max File Size (bytes): %s' % maxFileSize)
-        print('  Rollover Interval (seconds): %s' % rolloverInterval)
-        print('  Expiration Time (seconds): %s' % expirationTime)
+        print(f'  Max File Size (bytes): {maxFileSize}')
+        print(f'  Rollover Interval (seconds): {rolloverInterval}')
+        print(f'  Expiration Time (seconds): {expirationTime}')
 
-        print('  Log Signing: %s' % logSigning)
-        print('  Signing Certificate: %s' % signedAuditCertNickname)
+        print(f'  Log Signing: {logSigning}')
+        print(f'  Signing Certificate: {signedAuditCertNickname}')
 
     @staticmethod
     def print_audit_event_config(event):
-        print('  Event Name: %s' % event.get('name'))
-        print('  Enabled: %s' % event.get('enabled'))
-        print('  Filter: %s' % event.get('filter'))
+        print(f"  Event Name: {event.get('name')}")
+        print(f"  Enabled: {event.get('enabled')}")
+        print(f"  Filter: {event.get('filter')}")
 
 
 class AuditConfigShowCLI(pki.cli.CLI):
@@ -96,7 +96,9 @@ class AuditConfigShowCLI(pki.cli.CLI):
         self.parent = parent
 
     def print_help(self):
-        print('Usage: pki-server %s-audit-config-show [OPTIONS]' % self.parent.parent.name)
+        print(
+            f'Usage: pki-server {self.parent.parent.name}-audit-config-show [OPTIONS]'
+        )
         print()
         print('  -i, --instance <instance ID>       Instance ID (default: pki-tomcat).')
         print('  -v, --verbose                      Run in verbose mode.')
@@ -161,7 +163,9 @@ class AuditConfigModifyCLI(pki.cli.CLI):
         self.parent = parent
 
     def print_help(self):
-        print('Usage: pki-server %s-audit-config-mod [OPTIONS]' % self.parent.parent.name)
+        print(
+            f'Usage: pki-server {self.parent.parent.name}-audit-config-mod [OPTIONS]'
+        )
         print()
         print('  -i, --instance <instance ID>       Instance ID (default: pki-tomcat).')
         print('      --enabled <True|False>         Enable/disable audit logging.')
@@ -329,7 +333,9 @@ class AuditEventFindCLI(pki.cli.CLI):
         self.parent = parent
 
     def print_help(self):
-        print('Usage: pki-server %s-audit-event-find [OPTIONS]' % self.parent.parent.name)
+        print(
+            f'Usage: pki-server {self.parent.parent.name}-audit-event-find [OPTIONS]'
+        )
         print()
         print('  -i, --instance <instance ID>       '
               '  Instance ID (default: pki-tomcat).')
@@ -403,7 +409,7 @@ class AuditEventFindCLI(pki.cli.CLI):
 
         events = subsystem.find_audit_event_configs(enabled, enabled_by_default)
 
-        self.print_message('%s entries matched' % len(events))
+        self.print_message(f'{len(events)} entries matched')
 
         first = True
         for event in events:
@@ -412,9 +418,9 @@ class AuditEventFindCLI(pki.cli.CLI):
             else:
                 print()
 
-            print('  Event Name: %s' % event.get('name'))
-            print('  Enabled: %s' % event.get('enabled'))
-            print('  Filter: %s' % event.get('filter'))
+            print(f"  Event Name: {event.get('name')}")
+            print(f"  Enabled: {event.get('enabled')}")
+            print(f"  Filter: {event.get('filter')}")
 
 
 class AuditEventShowCLI(pki.cli.CLI):
@@ -425,8 +431,9 @@ class AuditEventShowCLI(pki.cli.CLI):
         self.parent = parent
 
     def print_help(self):
-        print('Usage: pki-server %s-audit-event-show [OPTIONS] <event name>'
-              % self.parent.parent.name)
+        print(
+            f'Usage: pki-server {self.parent.parent.name}-audit-event-show [OPTIONS] <event name>'
+        )
         print()
         print('  -i, --instance <instance ID>       Instance ID (default: pki-tomcat).')
         print('  -v, --verbose                      Run in verbose mode.')
@@ -502,8 +509,9 @@ class AuditEventEnableCLI(pki.cli.CLI):
         self.parent = parent
 
     def print_help(self):
-        print('Usage: pki-server %s-audit-event-enable [OPTIONS] <event_name>'
-              % self.parent.parent.name)
+        print(
+            f'Usage: pki-server {self.parent.parent.name}-audit-event-enable [OPTIONS] <event_name>'
+        )
         print()
         print('  -i, --instance <instance ID>       Instance ID (default: pki-tomcat).')
         print('  -v, --verbose                      Run in verbose mode.')
@@ -569,10 +577,9 @@ class AuditEventEnableCLI(pki.cli.CLI):
 
         msg = None
         if enabled:
-            msg = 'Event "{}" enabled successfully. You may need to ' \
-                  'restart the instance.'.format(event_name)
+            msg = f'Event "{event_name}" enabled successfully. You may need to restart the instance.'
         else:
-            msg = 'Event "{}" may be already enabled.'.format(event_name)
+            msg = f'Event "{event_name}" may be already enabled.'
 
         print(len(msg) * '-')
         print(msg)
@@ -673,8 +680,9 @@ class AuditEventDisableCLI(pki.cli.CLI):
         self.parent = parent
 
     def print_help(self):
-        print('Usage: pki-server %s-audit-event-disable [OPTIONS] <event_name>'
-              % self.parent.parent.name)
+        print(
+            f'Usage: pki-server {self.parent.parent.name}-audit-event-disable [OPTIONS] <event_name>'
+        )
         print()
         print('  -i, --instance <instance ID>       Instance ID (default: pki-tomcat).')
         print('  -v, --verbose                      Run in verbose mode.')
@@ -741,10 +749,9 @@ class AuditEventDisableCLI(pki.cli.CLI):
 
         msg = None
         if disable:
-            msg = 'Audit event "{}" disabled. You may need to restart the ' \
-                  'instance.'.format(event_name)
+            msg = f'Audit event "{event_name}" disabled. You may need to restart the instance.'
         else:
-            msg = 'Audit event "{}" already disabled.'.format(event_name)
+            msg = f'Audit event "{event_name}" already disabled.'
 
         print(len(msg) * '-')
         print(msg)
@@ -762,7 +769,7 @@ class AuditFileFindCLI(pki.cli.CLI):
         self.parent = parent
 
     def print_help(self):
-        print('Usage: pki-server %s-audit-file-find [OPTIONS]' % self.parent.parent.name)
+        print(f'Usage: pki-server {self.parent.parent.name}-audit-file-find [OPTIONS]')
         print()
         print('  -i, --instance <instance ID>       Instance ID (default: pki-tomcat).')
         print('  -v, --verbose                      Run in verbose mode.')
@@ -819,7 +826,7 @@ class AuditFileFindCLI(pki.cli.CLI):
 
         log_files = subsystem.get_audit_log_files()
 
-        self.print_message('%s entries matched' % len(log_files))
+        self.print_message(f'{len(log_files)} entries matched')
 
         first = True
         for filename in log_files:
@@ -828,7 +835,7 @@ class AuditFileFindCLI(pki.cli.CLI):
             else:
                 print()
 
-            print('  File name: %s' % filename)
+            print(f'  File name: {filename}')
 
 
 class AuditFileVerifyCLI(pki.cli.CLI):
@@ -839,7 +846,9 @@ class AuditFileVerifyCLI(pki.cli.CLI):
         self.parent = parent
 
     def print_help(self):
-        print('Usage: pki-server %s-audit-file-verify [OPTIONS]' % self.parent.parent.name)
+        print(
+            f'Usage: pki-server {self.parent.parent.name}-audit-file-verify [OPTIONS]'
+        )
         print()
         print('  -i, --instance <instance ID>       Instance ID (default: pki-tomcat).')
         print('  -v, --verbose                      Run in verbose mode.')
@@ -918,7 +927,7 @@ class AuditFileVerifyCLI(pki.cli.CLI):
                 '-a', file_list])
 
             if logger.isEnabledFor(logging.INFO):
-                print('Command: %s' % ' '.join(cmd))
+                print(f"Command: {' '.join(cmd)}")
 
             subprocess.call(cmd)
 

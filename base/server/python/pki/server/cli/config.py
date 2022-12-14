@@ -33,7 +33,9 @@ logger = logging.getLogger(__name__)
 class SubsystemConfigCLI(pki.cli.CLI):
 
     def __init__(self, parent):
-        super().__init__('config', '%s configuration management commands' % parent.name.upper())
+        super().__init__(
+            'config', f'{parent.name.upper()} configuration management commands'
+        )
 
         self.parent = parent
         self.add_module(SubsystemConfigFindCLI(self))
@@ -45,11 +47,13 @@ class SubsystemConfigCLI(pki.cli.CLI):
 class SubsystemConfigFindCLI(pki.cli.CLI):
 
     def __init__(self, parent):
-        super().__init__('find', 'Find %s configuration parameters' % parent.parent.name.upper())
+        super().__init__(
+            'find', f'Find {parent.parent.name.upper()} configuration parameters'
+        )
         self.parent = parent
 
     def print_help(self):
-        print('Usage: pki-server %s-config-find [OPTIONS]' % self.parent.parent.name)
+        print(f'Usage: pki-server {self.parent.parent.name}-config-find [OPTIONS]')
         print()
         print('  -i, --instance <instance ID>       Instance ID (default: pki-tomcat).')
         print('      --help                         Show help message.')
@@ -97,7 +101,7 @@ class SubsystemConfigFindCLI(pki.cli.CLI):
             sys.exit(1)
 
         for name, value in subsystem.config.items():
-            print('%s=%s' % (name, value))
+            print(f'{name}={value}')
 
 
 class SubsystemConfigShowCLI(pki.cli.CLI):
@@ -105,11 +109,14 @@ class SubsystemConfigShowCLI(pki.cli.CLI):
     def __init__(self, parent):
         super().__init__(
             'show',
-            'Show %s configuration parameter value' % parent.parent.name.upper())
+            f'Show {parent.parent.name.upper()} configuration parameter value',
+        )
         self.parent = parent
 
     def print_help(self):
-        print('Usage: pki-server %s-config-show [OPTIONS] <name>' % self.parent.parent.name)
+        print(
+            f'Usage: pki-server {self.parent.parent.name}-config-show [OPTIONS] <name>'
+        )
         print()
         print('  -i, --instance <instance ID>       Instance ID (default: pki-tomcat).')
         print('      --help                         Show help message.')
@@ -177,12 +184,14 @@ class SubsystemConfigSetCLI(pki.cli.CLI):
     def __init__(self, parent):
         super().__init__(
             'set',
-            'Set %s configuration parameter value' % parent.parent.name.upper())
+            f'Set {parent.parent.name.upper()} configuration parameter value',
+        )
         self.parent = parent
 
     def print_help(self):
-        print('Usage: pki-server %s-config-set [OPTIONS] <name> <value>'
-              % self.parent.parent.name)
+        print(
+            f'Usage: pki-server {self.parent.parent.name}-config-set [OPTIONS] <name> <value>'
+        )
         print()
         print('  -i, --instance <instance ID>       Instance ID (default: pki-tomcat).')
         print('      --help                         Show help message.')
@@ -251,12 +260,15 @@ class SubsystemConfigSetCLI(pki.cli.CLI):
 class SubsystemConfigUnsetCLI(pki.cli.CLI):
 
     def __init__(self, parent):
-        super().__init__('unset', 'Unset %s configuration parameter' % parent.parent.name.upper())
+        super().__init__(
+            'unset', f'Unset {parent.parent.name.upper()} configuration parameter'
+        )
         self.parent = parent
 
     def print_help(self):
-        print('Usage: pki-server %s-config-unset [OPTIONS] <name>'
-              % self.parent.parent.name)
+        print(
+            f'Usage: pki-server {self.parent.parent.name}-config-unset [OPTIONS] <name>'
+        )
         print()
         print('  -i, --instance <instance ID>       Instance ID (default: pki-tomcat).')
         print('      --help                         Show help message.')

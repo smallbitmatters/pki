@@ -21,6 +21,7 @@
 """
 This module contains top-level classes and functions used by the Dogtag project.
 """
+
 from __future__ import absolute_import
 from __future__ import print_function
 
@@ -44,7 +45,7 @@ SHARE_DIR = '/usr/share/pki'
 BASE_DIR = '/var/lib'
 LOG_DIR = '/var/log/pki'
 
-PACKAGE_VERSION = SHARE_DIR + '/VERSION'
+PACKAGE_VERSION = f'{SHARE_DIR}/VERSION'
 CERT_HEADER = "-----BEGIN CERTIFICATE-----"
 CERT_FOOTER = "-----END CERTIFICATE-----"
 
@@ -127,13 +128,9 @@ def convert_x509_name_to_dn(name):
         oid = attr.oid
         attr_name = ATTR_NAME_BY_OID.get(oid, oid.dotted_string)
         attr_value = ldap.dn.escape_dn_chars(attr.value)
-        rdn = '%s=%s' % (attr_name, attr_value)
+        rdn = f'{attr_name}={attr_value}'
 
-        if dn:
-            dn = rdn + ',' + dn
-        else:
-            dn = rdn
-
+        dn = f'{rdn},{dn}' if dn else rdn
     return dn
 
 
@@ -166,13 +163,13 @@ def get_info(name):
             if not match:
                 continue
 
-            key = match.group(1)
-            value = match.group(2)
+            key = match[1]
+            value = match[2]
 
             if key.lower() == name.lower():
                 return value
 
-    raise Exception('Property not found: %s' % name)
+    raise Exception(f'Property not found: {name}')
 
 
 def generate_password(charset=GEN_PASS_CHARSET, length=12):
@@ -219,15 +216,12 @@ def generate_password(charset=GEN_PASS_CHARSET, length=12):
         chars.append(rnd.choice(PUNCTUATIONS))
 
     # extend chars to specified length via any valid character classes
-    chars.extend(rnd.choice(charset) for i in range(length - len(chars)))
+    chars.extend(rnd.choice(charset) for _ in range(length - len(chars)))
 
     # randomize the char order
     rnd.shuffle(chars)
 
-    # final password is `length` chars
-    password = ''.join(chars)
-
-    return password
+    return ''.join(chars)
 
 
 class FIPS:
@@ -245,11 +239,7 @@ class FIPS:
         with open(os.devnull, 'w', encoding='utf-8') as fnull:
             output = subprocess.check_output(command, stderr=fnull).decode('utf-8')
 
-        if output != '0':
-            return True
-
-        else:
-            return False
+        return output != '0'
 
 
 # pylint: disable=R0903
@@ -313,10 +303,14 @@ class ResourceMessage(object):
         :type name: str
         :returns: str -- value of parameter
         """
-        for attr in self.Attributes.Attribute:
-            if attr.name == name:
-                return attr.value
-        return None
+        return next(
+            (
+                attr.value
+                for attr in self.Attributes.Attribute
+                if attr.name == name
+            ),
+            None,
+        )
 
 
 class PKIException(Exception, ResourceMessage):
@@ -550,7 +544,7 @@ class PropertyFile(object):
             if not match:
                 continue
 
-            key = match.group(1)
+            key = match[1]
             if key.lower() == name.lower():
                 return i
 
@@ -564,8 +558,6 @@ class PropertyFile(object):
         :type name: str
         :return: str -- value of property
         """
-        result = None
-
         for line in self.lines:
 
             # parse <key> <delimiter> <value>
@@ -575,13 +567,13 @@ class PropertyFile(object):
             if not match:
                 continue
 
-            key = match.group(1)
-            value = match.group(2)
+            key = match[1]
+            value = match[2]
 
             if key.lower() == name.lower():
                 return value
 
-        return result
+        return None
 
     def set(self, name, value, index=None):
         """
@@ -604,7 +596,7 @@ class PropertyFile(object):
             if not match:
                 continue
 
-            key = match.group(1)
+            key = match[1]
 
             if key.lower() == name.lower():
                 self.lines[i] = key + self.delimiter + value
@@ -633,8 +625,8 @@ class PropertyFile(object):
             if not match:
                 continue
 
-            key = match.group(1)
-            value = match.group(2)
+            key = match[1]
+            value = match[2]
 
             if key.lower() == name.lower():
                 self.lines.pop(i)

@@ -18,8 +18,7 @@ logger = logging.getLogger(__name__)
 class GroupCLI(pki.cli.CLI):
 
     def __init__(self, parent):
-        super().__init__(
-            'group', '%s group management commands' % parent.name.upper())
+        super().__init__('group', f'{parent.name.upper()} group management commands')
 
         self.parent = parent
         self.add_module(GroupFindCLI(self))
@@ -29,14 +28,12 @@ class GroupCLI(pki.cli.CLI):
 class GroupFindCLI(pki.cli.CLI):
 
     def __init__(self, parent):
-        super().__init__(
-            'find',
-            'Find %s groups' % parent.parent.name.upper())
+        super().__init__('find', f'Find {parent.parent.name.upper()} groups')
 
         self.parent = parent
 
     def print_help(self):
-        print('Usage: pki-server %s-group-find [OPTIONS]' % self.parent.parent.name)
+        print(f'Usage: pki-server {self.parent.parent.name}-group-find [OPTIONS]')
         print()
         print('  -i, --instance <instance ID>       Instance ID (default: pki-tomcat).')
         print('  -v, --verbose                      Run in verbose mode.')
@@ -98,7 +95,8 @@ class GroupMemberCLI(pki.cli.CLI):
 
     def __init__(self, parent):
         super().__init__(
-            'member', '%s group member management commands' % parent.name.upper())
+            'member', f'{parent.name.upper()} group member management commands'
+        )
 
         self.parent = parent
         self.add_module(GroupMemberFindCLI(self))
@@ -109,14 +107,15 @@ class GroupMemberFindCLI(pki.cli.CLI):
 
     def __init__(self, parent):
         super().__init__(
-            'find',
-            'Find %s group members' % parent.parent.parent.name.upper())
+            'find', f'Find {parent.parent.parent.name.upper()} group members'
+        )
 
         self.parent = parent
 
     def print_help(self):
-        print('Usage: pki-server %s-group-member-find [OPTIONS] <group ID>'
-              % self.parent.parent.parent.name)
+        print(
+            f'Usage: pki-server {self.parent.parent.parent.name}-group-member-find [OPTIONS] <group ID>'
+        )
         print()
         print('  -i, --instance <instance ID>       Instance ID (default: pki-tomcat).')
         print('  -v, --verbose                      Run in verbose mode.')
@@ -188,21 +187,22 @@ class GroupMemberFindCLI(pki.cli.CLI):
             else:
                 print()
 
-            print('  User ID: {}'.format(member['id']))
+            print(f"  User ID: {member['id']}")
 
 
 class GroupMemberAddCLI(pki.cli.CLI):
 
     def __init__(self, parent):
         super().__init__(
-            'add',
-            'Add %s group member' % parent.parent.parent.name.upper())
+            'add', f'Add {parent.parent.parent.name.upper()} group member'
+        )
 
         self.parent = parent
 
     def print_help(self):
-        print('Usage: pki-server %s-group-member-add [OPTIONS] <group ID> <member ID>'
-              % self.parent.parent.parent.name)
+        print(
+            f'Usage: pki-server {self.parent.parent.parent.name}-group-member-add [OPTIONS] <group ID> <member ID>'
+        )
         print()
         print('  -i, --instance <instance ID>       Instance ID (default: pki-tomcat).')
         print('  -v, --verbose                      Run in verbose mode.')

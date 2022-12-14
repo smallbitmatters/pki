@@ -54,8 +54,8 @@ class AccountClient:
             if subsystem is None:
                 raise Exception('Missing subsystem for AccountClient')
 
-            self.login_url = '/' + subsystem + self.login_url
-            self.logout_url = '/' + subsystem + self.logout_url
+            self.login_url = f'/{subsystem}{self.login_url}'
+            self.logout_url = f'/{subsystem}{self.logout_url}'
 
     @pki.handle_exceptions()
     def login(self):

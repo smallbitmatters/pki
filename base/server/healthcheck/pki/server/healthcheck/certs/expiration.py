@@ -73,11 +73,13 @@ def check_cert_expiry_date(class_instance, cert):
         logger.warning("Expiring in less than %s days: %s",
                        class_instance.config.cert_expiration_days,
                        cert['id'])
-        return Result(class_instance, constants.WARNING,
-                      cert_id=cert['id'],
-                      expiry_date=expiry_date_human,
-                      msg='Your certificate expires within %s days.' %
-                          class_instance.config.cert_expiration_days)
+        return Result(
+            class_instance,
+            constants.WARNING,
+            cert_id=cert['id'],
+            expiry_date=expiry_date_human,
+            msg=f'Your certificate expires within {class_instance.config.cert_expiration_days} days.',
+        )
     else:
         # Valid certificate
         logger.info("VALID certificate: %s", cert['id'])
@@ -96,8 +98,11 @@ class CASystemCertExpiryCheck(CertsPlugin):
     def check(self):
         if not self.instance.exists():
             logger.debug('Invalid instance: %s', self.instance.name)
-            yield Result(self, constants.CRITICAL,
-                         msg='Invalid PKI instance: %s' % self.instance.name)
+            yield Result(
+                self,
+                constants.CRITICAL,
+                msg=f'Invalid PKI instance: {self.instance.name}',
+            )
             return
 
         self.instance.load()
@@ -124,8 +129,11 @@ class KRASystemCertExpiryCheck(CertsPlugin):
     def check(self):
         if not self.instance.exists():
             logger.debug('Invalid instance: %s', self.instance.name)
-            yield Result(self, constants.CRITICAL,
-                         msg='Invalid PKI instance: %s' % self.instance.name)
+            yield Result(
+                self,
+                constants.CRITICAL,
+                msg=f'Invalid PKI instance: {self.instance.name}',
+            )
             return
 
         self.instance.load()
@@ -152,8 +160,11 @@ class OCSPSystemCertExpiryCheck(CertsPlugin):
     def check(self):
         if not self.instance.exists():
             logger.debug('Invalid instance: %s', self.instance.name)
-            yield Result(self, constants.CRITICAL,
-                         msg='Invalid PKI instance: %s' % self.instance.name)
+            yield Result(
+                self,
+                constants.CRITICAL,
+                msg=f'Invalid PKI instance: {self.instance.name}',
+            )
             return
 
         self.instance.load()
@@ -180,8 +191,11 @@ class TKSSystemCertExpiryCheck(CertsPlugin):
     def check(self):
         if not self.instance.exists():
             logger.debug('Invalid instance: %s', self.instance.name)
-            yield Result(self, constants.CRITICAL,
-                         msg='Invalid PKI instance: %s' % self.instance.name)
+            yield Result(
+                self,
+                constants.CRITICAL,
+                msg=f'Invalid PKI instance: {self.instance.name}',
+            )
             return
 
         self.instance.load()
@@ -208,8 +222,11 @@ class TPSSystemCertExpiryCheck(CertsPlugin):
     def check(self):
         if not self.instance.exists():
             logger.debug('Invalid instance: %s', self.instance.name)
-            yield Result(self, constants.CRITICAL,
-                         msg='Invalid PKI instance: %s' % self.instance.name)
+            yield Result(
+                self,
+                constants.CRITICAL,
+                msg=f'Invalid PKI instance: {self.instance.name}',
+            )
             return
 
         self.instance.load()

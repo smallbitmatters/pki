@@ -87,9 +87,7 @@ class PKICLI(pki.cli.CLI):
         if not dbtype:
             raise KeyError("NSS_DEFAULT_DB_TYPE env var is not set or empty.")
         if dbtype not in {'dbm', 'sql'}:
-            raise ValueError(
-                "Unsupported NSS_DEFAULT_DB_TYPE value '{}'".format(dbtype)
-            )
+            raise ValueError(f"Unsupported NSS_DEFAULT_DB_TYPE value '{dbtype}'")
         return dbtype
 
     def execute_java(self, args, stdout=sys.stdout):
@@ -101,22 +99,18 @@ class PKICLI(pki.cli.CLI):
         pki_lib = os.getenv('PKI_LIB')
         logging_config = os.getenv('PKI_LOGGING_CONFIG')
 
-        cmd = []
-        cmd.extend([java_home + '/bin/java'])
-
-        cmd.extend([
-            '-cp', pki_lib + '/*'
-        ])
-
+        cmd = [f'{java_home}/bin/java', *['-cp', f'{pki_lib}/*']]
         if java_fips_cmd is not None:
             cmd.extend([
                 java_fips_cmd
             ])
 
-        cmd.extend([
-            '-Djava.util.logging.config.file=' + logging_config,
-            'com.netscape.cmstools.cli.MainCLI'
-        ])
+        cmd.extend(
+            [
+                f'-Djava.util.logging.config.file={logging_config}',
+                'com.netscape.cmstools.cli.MainCLI',
+            ]
+        )
 
         # restore options for Java commands
 
@@ -176,71 +170,57 @@ class PKICLI(pki.cli.CLI):
             # get database path
             if args[i] == '-d':
                 self.database = args[i + 1]
-                pki_options.append(args[i])
-                pki_options.append(args[i + 1])
-                i = i + 2
+                pki_options.extend((args[i], args[i + 1]))
+                i += 2
 
-            # get database password
             elif args[i] == '-c':
                 self.password = args[i + 1]
-                pki_options.append(args[i])
-                pki_options.append(args[i + 1])
-                i = i + 2
+                pki_options.extend((args[i], args[i + 1]))
+                i += 2
 
-            # get database password file path
             elif args[i] == '-C':
                 self.password_file = args[i + 1]
-                pki_options.append(args[i])
-                pki_options.append(args[i + 1])
-                i = i + 2
+                pki_options.extend((args[i], args[i + 1]))
+                i += 2
 
-            # get database password config path
             elif args[i] == '-f':
                 self.password_conf = args[i + 1]
-                pki_options.append(args[i])
-                pki_options.append(args[i + 1])
-                i = i + 2
+                pki_options.extend((args[i], args[i + 1]))
+                i += 2
 
-            # get token name
             elif args[i] == '--token':
                 self.token = args[i + 1]
-                pki_options.append(args[i])
-                pki_options.append(args[i + 1])
-                i = i + 2
+                pki_options.extend((args[i], args[i + 1]))
+                i += 2
 
-            # check ignore banner option
             elif args[i] == '--ignore-banner':
                 self.ignore_banner = True
                 pki_options.append(args[i])
-                i = i + 1
+                i += 1
 
-            # check verbose option
-            elif args[i] == '-v' or args[i] == '--verbose':
+            elif args[i] in ['-v', '--verbose']:
                 logging.getLogger().setLevel(logging.INFO)
                 pki_options.append(args[i])
-                i = i + 1
+                i += 1
 
-            # check debug option
             elif args[i] == '--debug':
                 logging.getLogger().setLevel(logging.DEBUG)
                 pki_options.append(args[i])
-                i = i + 1
+                i += 1
 
-            # get client type
             elif args[i] == '--client-type':
                 client_type = args[i + 1]
-                pki_options.append(args[i])
-                pki_options.append(args[i + 1])
-                i = i + 2
+                pki_options.extend((args[i], args[i + 1]))
+                i += 2
 
             else:  # otherwise, save the arg for the next module
                 cmd_args.append(args[i])
-                i = i + 1
+                i += 1
 
         # save the rest of the args
         while i < len(args):
             cmd_args.append(args[i])
-            i = i + 1
+            i += 1
 
         logger.info('PKI options: %s', ' '.join(pki_options))
         logger.info('PKI command: %s %s', command, ' '.join(cmd_args))
@@ -253,7 +233,7 @@ class PKICLI(pki.cli.CLI):
             self.execute_java(cmd_args)
 
         else:
-            raise Exception('Unsupported client type: ' + client_type)
+            raise Exception(f'Unsupported client type: {client_type}')
 
 
 if __name__ == '__main__':

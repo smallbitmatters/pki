@@ -116,8 +116,9 @@ def convert_data(data, input_format, output_format,
 
         return ''.join(lines)
 
-    raise Exception('Unable to convert data from {} to {}'.format(
-        input_format, output_format))
+    raise Exception(
+        f'Unable to convert data from {input_format} to {output_format}'
+    )
 
 
 def convert_csr(csr_data, input_format, output_format):
@@ -152,10 +153,7 @@ def get_file_type(filename):
     if data.startswith(CERT_HEADER):
         return 'cert'
 
-    if data.startswith(PKCS7_HEADER):
-        return 'pkcs7'
-
-    return None
+    return 'pkcs7' if data.startswith(PKCS7_HEADER) else None
 
 
 def normalize_token(token):
@@ -170,10 +168,7 @@ def normalize_token(token):
     if token.lower() == INTERNAL_TOKEN_NAME:
         return None
 
-    if token.lower() == INTERNAL_TOKEN_FULL_NAME.lower():
-        return None
-
-    return token
+    return None if token.lower() == INTERNAL_TOKEN_FULL_NAME.lower() else token
 
 
 class NSSDatabase(object):
@@ -197,11 +192,7 @@ class NSSDatabase(object):
 
         if user:
             self.uid = pwd.getpwnam(user).pw_uid
-            if group:
-                self.gid = grp.getgrnam(group).gr_gid
-            else:
-                self.gid = pwd.getpwnam(user).pw_gid
-
+            self.gid = grp.getgrnam(group).gr_gid if group else pwd.getpwnam(user).pw_gid
         self.directory = directory
         self.token = normalize_token(token)
 
@@ -292,18 +283,13 @@ class NSSDatabase(object):
         if os.path.exists(os.path.join(self.directory, 'cert9.db')):
             return True
 
-        if os.path.exists(os.path.join(self.directory, 'cert8.db')):
-            return True
-
-        return False
+        return bool(os.path.exists(os.path.join(self.directory, 'cert8.db')))
 
     def close(self):
         shutil.rmtree(self.tmpdir)
 
     def get_effective_token(self, token=None):
-        if not normalize_token(token):
-            return self.token
-        return token
+        return token if normalize_token(token) else self.token
 
     def create_password_file(self, tmpdir, password, filename=None):
         if not filename:
@@ -348,10 +334,7 @@ class NSSDatabase(object):
         if all_tokens:
             password = self.get_all_passwords()
         else:
-            if normalize_token(token):
-                token = 'hardware-%s' % token
-            else:
-                token = INTERNAL_TOKEN_NAME
+            token = f'hardware-{token}' if normalize_token(token) else INTERNAL_TOKEN_NAME
             password = self.passwords[token]
 
         # then store it in a temp file
@@ -398,23 +381,15 @@ class NSSDatabase(object):
         '''
         dbtype = self.get_dbtype()
         if dbtype is None:
-            raise ValueError(
-                "NSS database {} does not exist".format(self.directory)
-            )
+            raise ValueError(f"NSS database {self.directory} does not exist")
         elif dbtype == 'sql':
-            raise ValueError(
-                "NSS database {} already in SQL format".format(self.directory)
-            )
+            raise ValueError(f"NSS database {self.directory} already in SQL format")
 
         logger.info(
             "Convert NSSDB %s from DBM to SQL format", self.directory
         )
 
-        cmd = [
-            'certutil',
-            '-N',
-            '-d', 'sql:{}'.format(self.directory)
-        ]
+        cmd = ['certutil', '-N', '-d', f'sql:{self.directory}']
 
         if self.password_file:
             cmd.extend([
@@ -442,17 +417,11 @@ class NSSDatabase(object):
 
         if self.get_dbtype() != 'sql':
             raise RuntimeError(
-                "Migration of NSS database {} was not successful.".format(
-                    self.directory
-                )
+                f"Migration of NSS database {self.directory} was not successful."
             )
 
         # list certs to verify DB
-        cmd = [
-            'certutil',
-            '-L',
-            '-d', 'sql:{}'.format(self.directory)
-        ]
+        cmd = ['certutil', '-L', '-d', f'sql:{self.directory}']
 
         if self.password_file:
             cmd.extend(['-f', self.password_file])
@@ -461,7 +430,7 @@ class NSSDatabase(object):
 
         for oldname, _ in migration:  # pylint: disable=unused-variable
             oldname = os.path.join(self.directory, oldname)
-            os.rename(oldname, oldname + '.migrated')
+            os.rename(oldname, f'{oldname}.migrated')
 
         logger.info("Migration successful")
 
@@ -478,7 +447,7 @@ class NSSDatabase(object):
         result = self.run(cmd, capture_output=True, check=True)
         output = result.stdout.decode('utf-8')
 
-        pattern = re.compile(r' name="%s"' % name)
+        pattern = re.compile(f' name="{name}"')
 
         for line in output.splitlines():
             line = line.strip()
@@ -545,7 +514,7 @@ class NSSDatabase(object):
 
         if token:
             cmd.extend(['--token', token])
-            fullname = token + ':' + nickname
+            fullname = f'{token}:{nickname}'
         else:
             fullname = nickname
 
@@ -555,10 +524,7 @@ class NSSDatabase(object):
         ])
 
         if nickname:
-            if token:
-                fullname = token + ':' + nickname
-            else:
-                fullname = nickname
+            fullname = f'{token}:{nickname}' if token else nickname
             cmd.extend(['--nickname', fullname])
 
         if logger.isEnabledFor(logging.DEBUG):
@@ -595,8 +561,7 @@ class NSSDatabase(object):
         elif self.password_file:
             cmd.extend(['-C', self.password_file])
 
-        token = self.get_effective_token(token)
-        if token:
+        if token := self.get_effective_token(token):
             cmd.extend(['--token', token])
 
         cmd.extend([
@@ -736,8 +701,7 @@ class NSSDatabase(object):
         elif self.password_file:
             cmd.extend(['-C', self.password_file])
 
-        token = self.get_effective_token(token)
-        if token:
+        if token := self.get_effective_token(token):
             cmd.extend(['--token', token])
 
             # Don't check the return value as a workaround for NSS upstream
@@ -817,13 +781,7 @@ class NSSDatabase(object):
 
         password_file = self.get_password_file(self.tmpdir, None,
                                                all_tokens=True)
-        cmd.extend(['-f', password_file])
-
-        cmd.extend([
-            '-n', nickname,
-            '-t', trust_attributes
-        ])
-
+        cmd.extend(['-f', password_file, '-n', nickname, '-t', trust_attributes])
         self.run(cmd, check=True)
 
     def create_noise(self, noise_file, size=2048, key_type='rsa'):
@@ -977,7 +935,7 @@ class NSSDatabase(object):
                     key_type=key_type, key_size=key_size, curve=curve)
                 if noise_file is None:
                     noise_file = os.path.join(tmpdir, 'noise')
-                    size = key_size if key_size else 2048
+                    size = key_size or 2048
                     self.create_noise(noise_file=noise_file, size=size, key_type=key_type)
                 key_args.extend(['-z', noise_file])
 
@@ -1004,11 +962,7 @@ class NSSDatabase(object):
 
                 cmd.extend(['--keyUsage'])
 
-                usages = []
-                for usage in key_usage_ext:
-                    if key_usage_ext[usage]:
-                        usages.append(usage)
-
+                usages = [usage for usage in key_usage_ext if key_usage_ext[usage]]
                 cmd.extend([','.join(usages)])
 
             if basic_constraints_ext:
@@ -1038,11 +992,11 @@ class NSSDatabase(object):
 
                 cmd.extend(['--extKeyUsage'])
 
-                usages = []
-                for usage in extended_key_usage_ext:
-                    if extended_key_usage_ext[usage]:
-                        usages.append(usage)
-
+                usages = [
+                    usage
+                    for usage in extended_key_usage_ext
+                    if extended_key_usage_ext[usage]
+                ]
                 cmd.extend([','.join(usages)])
 
             if generic_exts:
@@ -1054,25 +1008,19 @@ class NSSDatabase(object):
                     with open(data_file, 'wb') as f:
                         f.write(ext['data'])
 
-                    if ext['critical']:
-                        critical = 'critical'
-                    else:
-                        critical = 'not-critical'
-
-                    exts.append(
-                        '{}:{}:{}'.format(ext['oid'], critical, data_file)
-                    )
+                    critical = 'critical' if ext['critical'] else 'not-critical'
+                    exts.append(f"{ext['oid']}:{critical}:{data_file}")
 
                 cmd.append(','.join(exts))
 
             # generate binary request
             result = self.run(cmd, input=keystroke.encode('ascii'))
 
-            rc = result.returncode
-
-            if rc:
-                msg = "Failed to generate certificate request. Return code: %d\n"
-                msg += "Command: %s"
+            if rc := result.returncode:
+                msg = (
+                    "Failed to generate certificate request. Return code: %d\n"
+                    + "Command: %s"
+                )
                 raise Exception(msg % (rc, cmd))
 
             # encode binary request in base-64
@@ -1122,7 +1070,7 @@ class NSSDatabase(object):
             if password_file:
                 cmd.extend(['-P', password_file])
 
-            size = key_size if key_size else 2048
+            size = key_size or 2048
             cmd.extend([
                 '-a', 'rsa',
                 '-l', str(size),
@@ -1182,7 +1130,7 @@ class NSSDatabase(object):
         if temp_noise_file:
             fd, noise_file = tempfile.mkstemp()
             os.close(fd)
-            size = key_size if key_size else 2048
+            size = key_size or 2048
             self.create_noise(noise_file=noise_file, size=size, key_type=key_type)
         cmd.extend(['-z', noise_file])
 
@@ -1209,27 +1157,18 @@ class NSSDatabase(object):
         if password_file:
             cmd.extend(['-f', password_file])
 
-        token = self.get_effective_token(token)
-        if token:
+        if token := self.get_effective_token(token):
             cmd.extend(['-h', token])
 
         result = self.run(cmd, capture_output=True)
 
         out = result.stdout
-        err = result.stderr
-
         if result.returncode == 255:
             return []  # no keys were found
-        else:
-            # other error
-            raise Exception('Unable to get private keys: %s' % err)
+        err = result.stderr
 
-        # output contains list that looks like:
-        #   < 0> rsa      b995381610fb58e8b45d3c2401dfd30d6efdd595 (orphan)
-        #   < 1> rsa      dcd6cbc1226ede02a961488553b01639ff981cdd someNickame
-        #
-        # The hex string is the hex-encoded CKA_ID
-        return re.findall(br'^<\s*\d+>\s+\w+\s+(\w+)', out, re.MULTILINE)
+            # other error
+        raise Exception(f'Unable to get private keys: {err}')
 
     def __create_basic_constraints_ext(self, exts, basic_constraints_ext):
         '''
@@ -1353,20 +1292,12 @@ class NSSDatabase(object):
         if aia_ext.get('critical'):
             values.append('critical')
 
-        ca_issuers = aia_ext.get('ca_issuers')
-        if ca_issuers:
-            uris = ca_issuers.get('uri')
-            if uris:
-                for uri in uris:
-                    values.append('caIssuers;' + uri)
-
-        ocsp = aia_ext.get('ocsp')
-        if ocsp:
-            uris = ocsp.get('uri')
-            if uris:
-                for uri in uris:
-                    values.append('OCSP;' + uri)
-
+        if ca_issuers := aia_ext.get('ca_issuers'):
+            if uris := ca_issuers.get('uri'):
+                values.extend(f'caIssuers;{uri}' for uri in uris)
+        if ocsp := aia_ext.get('ocsp'):
+            if uris := ocsp.get('uri'):
+                values.extend(f'OCSP;{uri}' for uri in uris)
         exts['authorityInfoAccess'] = ', '.join(values)
 
     def __create_request(
@@ -1450,12 +1381,17 @@ class NSSDatabase(object):
                 password_file = self.get_password_file(self.tmpdir, token)
                 cmd.extend(['-C', password_file])
 
-            cmd.extend(['nss-cert-request'])
-            cmd.extend(['--subject', subject_dn])
-            cmd.extend(['--csr', request_file])
-
+            cmd.extend(
+                [
+                    'nss-cert-request',
+                    '--subject',
+                    subject_dn,
+                    '--csr',
+                    request_file,
+                ]
+            )
             if key_id is None and cka_id is not None:
-                key_id = '0x' + cka_id
+                key_id = f'0x{cka_id}'
 
             if key_id:
                 cmd.extend(['--key-id', key_id])
@@ -1584,21 +1520,13 @@ class NSSDatabase(object):
 
             cmd.extend(['--keyUsage'])
 
-            usages = []
-            for usage in key_usage_ext:
-                if key_usage_ext[usage]:
-                    usages.append(usage)
-
+            usages = [usage for usage in key_usage_ext if key_usage_ext[usage]]
             cmd.extend([','.join(usages)])
 
         # Extended key usage
         if ext_key_usage_ext:
             cmd.extend(['--extKeyUsage'])
-            usages = []
-            for usage in ext_key_usage_ext:
-                if ext_key_usage_ext[usage]:
-                    usages.append(usage)
-
+            usages = [usage for usage in ext_key_usage_ext if ext_key_usage_ext[usage]]
             cmd.extend([','.join(usages)])
 
         # Basic constraints
@@ -1656,8 +1584,7 @@ class NSSDatabase(object):
                 if s == 'ca_issuers':
                     keystroke += '1'
 
-                # 2. OCSP
-                if s == 'ocsp':
+                elif s == 'ocsp':
                     keystroke += '2'
                 keystroke += '\n'
                 for gn in aia_ext[s]['uri']:
@@ -1742,10 +1669,7 @@ class NSSDatabase(object):
             elif self.password_file:
                 cmd.extend(['-C', self.password_file])
 
-            cmd.extend(['nss-cert-issue'])
-            cmd.extend(['--csr', request_file])
-            cmd.extend(['--cert', cert_file])
-
+            cmd.extend(['nss-cert-issue', '--csr', request_file, '--cert', cert_file])
             if exts:
                 cmd.extend(['--ext', ext_conf])
 
@@ -1806,7 +1730,7 @@ class NSSDatabase(object):
 
             if token:
                 cmd.extend(['-h', token])
-                fullname = token + ':' + fullname
+                fullname = f'{token}:{fullname}'
 
             logger.debug('fullname: %s', fullname)
 
@@ -1816,25 +1740,20 @@ class NSSDatabase(object):
             result = self.run(cmd, capture_output=True)
 
             output = result.stdout
-            error = result.stderr
-
-            if error:
+            if error := result.stderr:
                 # certutil returned an error
                 # raise exception unless its not cert not found
                 logger.error('error : %s', error)
                 if error.startswith(b'certutil: Could not find cert: '):
                     return None
 
-                raise Exception('Could not find certificate: %s: %s' % (fullname, error.strip()))
+                raise Exception(f'Could not find certificate: {fullname}: {error.strip()}')
 
             if result.returncode != 0:
                 logger.warning('certutil returned non-zero exit code (bug #1539996)')
 
-            re_compile = re.compile(r'^' + fullname + r'\s+(\S+)$', re.MULTILINE)
-            cert_trust = re.search(re_compile, output.decode()).group(1)
-
-            return cert_trust
-
+            re_compile = re.compile(f'^{fullname}' + r'\s+(\S+)$', re.MULTILINE)
+            return re.search(re_compile, output.decode())[1]
         finally:
             shutil.rmtree(tmpdir)
 
@@ -1855,7 +1774,7 @@ class NSSDatabase(object):
 
             if token:
                 cmd.extend(['-h', token])
-                fullname = token + ':' + fullname
+                fullname = f'{token}:{fullname}'
 
             if password_file:
                 cmd.extend(['-f', password_file])
@@ -1865,15 +1784,13 @@ class NSSDatabase(object):
             result = self.run(cmd, capture_output=True)
 
             output = result.stdout
-            error = result.stderr
-
-            if error:
+            if error := result.stderr:
                 # certutil returned an error
                 # raise exception unless its not cert not found
                 if error.startswith(b'certutil: Could not find cert: '):
                     return None
 
-                raise Exception('Could not find certificate: %s: %s' % (fullname, error.strip()))
+                raise Exception(f'Could not find certificate: {fullname}: {error.strip()}')
 
             if result.returncode != 0:
                 logger.warning('certutil returned non-zero exit code (bug #1539996)')
@@ -1898,7 +1815,7 @@ class NSSDatabase(object):
             output_format_option = None
 
         else:
-            raise Exception('Unsupported output format: %s' % output_format)
+            raise Exception(f'Unsupported output format: {output_format}')
 
         tmpdir = self.create_tmpdir()
         try:
@@ -1915,7 +1832,7 @@ class NSSDatabase(object):
 
             if token:
                 cmd.extend(['-h', token])
-                fullname = token + ':' + fullname
+                fullname = f'{token}:{fullname}'
 
             if password_file:
                 cmd.extend(['-f', password_file])
@@ -1928,16 +1845,14 @@ class NSSDatabase(object):
             result = self.run(cmd, capture_output=True)
 
             cert_data = result.stdout
-            std_err = result.stderr
-
-            if std_err:
+            if std_err := result.stderr:
                 # certutil returned an error
                 # raise exception unless its not cert not found
                 if std_err.startswith(b'certutil: Could not find cert: '):
                     logger.debug('Cert not found: %s', nickname)
                     return None
 
-                raise Exception('Could not find cert: %s: %s' % (fullname, std_err.strip()))
+                raise Exception(f'Could not find cert: {fullname}: {std_err.strip()}')
 
             if not cert_data:
                 logger.debug('certutil did not return cert data')
@@ -1972,12 +1887,11 @@ class NSSDatabase(object):
         cert_obj = x509.load_pem_x509_certificate(
             cert_pem, backend=default_backend())
 
-        cert = {}
-        cert['object'] = cert_obj
-
-        cert['serial_number'] = cert_obj.serial_number
-
-        cert['issuer'] = pki.convert_x509_name_to_dn(cert_obj.issuer)
+        cert = {
+            'object': cert_obj,
+            'serial_number': cert_obj.serial_number,
+            'issuer': pki.convert_x509_name_to_dn(cert_obj.issuer),
+        }
         cert['subject'] = pki.convert_x509_name_to_dn(cert_obj.subject)
 
         cert['not_before'] = self.convert_time_to_millis(cert_obj.not_valid_before)
@@ -2008,7 +1922,7 @@ class NSSDatabase(object):
 
         if self.token:
             cmd.extend(['--token', self.token])
-            fullname = self.token + ':' + nickname
+            fullname = f'{self.token}:{nickname}'
         else:
             fullname = nickname
 
@@ -2071,17 +1985,19 @@ class NSSDatabase(object):
 
             if self.token:
                 cmd.extend(['--token', self.token])
-                full_name = self.token + ':' + nickname
+                full_name = f'{self.token}:{nickname}'
             else:
                 full_name = nickname
 
-            cmd.extend(['pkcs12-cert-import'])
-
-            cmd.extend([
-                '--pkcs12-file', pkcs12_file,
-                '--pkcs12-password-file', password_file
-            ])
-
+            cmd.extend(
+                [
+                    'pkcs12-cert-import',
+                    '--pkcs12-file',
+                    pkcs12_file,
+                    '--pkcs12-password-file',
+                    password_file,
+                ]
+            )
             if cert_encryption:
                 cmd.extend(['--cert-encryption', cert_encryption])
 
@@ -2255,11 +2171,7 @@ class NSSDatabase(object):
             elif logger.isEnabledFor(logging.INFO):
                 cmd.append('--verbose')
 
-            if pkcs7_data:
-                data = pkcs7_data.encode('utf-8')
-            else:
-                data = None
-
+            data = pkcs7_data.encode('utf-8') if pkcs7_data else None
             self.run(cmd, input=data, check=True)
 
             return
@@ -2304,7 +2216,7 @@ class NSSDatabase(object):
                 return
 
             # Import CA certs with default nicknames and trust attributes.
-            for i in range(0, n - 1):
+            for i in range(n - 1):
                 cert_file = prefix + str(i) + suffix
                 self.add_ca_cert(cert_file)
 
@@ -2418,13 +2330,15 @@ class NSSDatabase(object):
             if self.token:
                 cmd.extend(['--token', self.token])
 
-            cmd.extend(['pkcs12-export'])
-
-            cmd.extend([
-                '--pkcs12', pkcs12_file,
-                '--password-file', password_file
-            ])
-
+            cmd.extend(
+                [
+                    'pkcs12-export',
+                    '--pkcs12',
+                    pkcs12_file,
+                    '--password-file',
+                    password_file,
+                ]
+            )
             if cert_encryption:
                 cmd.extend(['--cert-encryption', cert_encryption])
 
@@ -2496,20 +2410,23 @@ class NSSDatabase(object):
             # reason is because the curve determines the size of the key;
             # after that you don't have a choice.
             if not curve and not key_size:
-                msg = "Must specify the curve to use when generating an "
-                msg += "elliptic curve key."
+                msg = (
+                    "Must specify the curve to use when generating an "
+                    + "elliptic curve key."
+                )
                 raise ValueError(msg)
             if curve and key_size and curve != key_size:
-                msg = "Specified both curve (%s) and key size (%s) when "
-                msg += "generating an elliptic curve key, but they differ."
+                msg = (
+                    "Specified both curve (%s) and key size (%s) when "
+                    + "generating an elliptic curve key, but they differ."
+                )
                 raise ValueError(msg % (curve, key_size))
 
             if curve:
                 args.extend(['-q', str(curve)])
             else:
                 args.extend(['-q', str(key_size)])
-        else:
-            if key_size:
-                args.extend(['-g', str(key_size)])
+        elif key_size:
+            args.extend(['-g', str(key_size)])
 
         return args

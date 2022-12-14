@@ -80,25 +80,30 @@ class PKISubsystem(object):
             'conf',
             'Catalina',
             'localhost',
-            self.name + '.xml')
+            f'{self.name}.xml',
+        )
 
         self.context_xml = os.path.join(
-            instance.conf_dir,
-            'Catalina',
-            'localhost',
-            self.name + '.xml')
+            instance.conf_dir, 'Catalina', 'localhost', f'{self.name}.xml'
+        )
 
     def __eq__(self, other):
-        if not isinstance(other, PKISubsystem):
-            return NotImplemented
-        return (self.name == other.name and
-                self.instance == other.instance and
-                self.type == other.type)
+        return (
+            (
+                self.name == other.name
+                and self.instance == other.instance
+                and self.type == other.type
+            )
+            if isinstance(other, PKISubsystem)
+            else NotImplemented
+        )
 
     def __ne__(self, other):
-        if not isinstance(other, PKISubsystem):
-            return NotImplemented
-        return not self.__eq__(other)
+        return (
+            not self.__eq__(other)
+            if isinstance(other, PKISubsystem)
+            else NotImplemented
+        )
 
     def __lt__(self, other):
         if not isinstance(other, PKISubsystem):
@@ -211,14 +216,14 @@ class PKISubsystem(object):
 
     def find_system_certs(self):
 
-        cert_ids = self.config['%s.cert.list' % self.name].split(',')
+        cert_ids = self.config[f'{self.name}.cert.list'].split(',')
 
         for cert_id in cert_ids:
             yield self.get_subsystem_cert(cert_id)
 
     def get_cert_infos(self):
 
-        cert_ids = self.config['%s.cert.list' % self.name].split(',')
+        cert_ids = self.config[f'{self.name}.cert.list'].split(',')
 
         certs = []
 
@@ -237,10 +242,7 @@ class PKISubsystem(object):
         if not cert['nickname']:
             return cert
 
-        # get cert info from NSS database
-        cert_info = self.get_nssdb_cert_info(tag)
-
-        if cert_info:
+        if cert_info := self.get_nssdb_cert_info(tag):
             cert.update(cert_info)
 
         return cert
@@ -249,13 +251,11 @@ class PKISubsystem(object):
 
         logger.info('Getting %s cert info from CS.cfg', tag)
 
-        cert = {}
-        cert['id'] = tag
-        cert['nickname'] = self.config.get('%s.%s.nickname' % (self.name, tag))
-        cert['token'] = self.config.get('%s.%s.tokenname' % (self.name, tag))
-        cert['data'] = self.config.get('%s.%s.cert' % (self.name, tag))
-        cert['request'] = self.config.get('%s.%s.certreq' % (self.name, tag))
-        cert['certusage'] = self.config.get('%s.cert.%s.certusage' % (self.name, tag))
+        cert = {'id': tag, 'nickname': self.config.get(f'{self.name}.{tag}.nickname')}
+        cert['token'] = self.config.get(f'{self.name}.{tag}.tokenname')
+        cert['data'] = self.config.get(f'{self.name}.{tag}.cert')
+        cert['request'] = self.config.get(f'{self.name}.{tag}.certreq')
+        cert['certusage'] = self.config.get(f'{self.name}.cert.{tag}.certusage')
 
         return cert
 
@@ -264,8 +264,8 @@ class PKISubsystem(object):
         logger.debug('PKISubsystem.get_nssdb_cert_info(%s)', tag)
         logger.info('Getting %s cert info from NSS database', tag)
 
-        nickname = self.config.get('%s.%s.nickname' % (self.name, tag))
-        token = self.config.get('%s.%s.tokenname' % (self.name, tag))
+        nickname = self.config.get(f'{self.name}.{tag}.nickname')
+        token = self.config.get(f'{self.name}.{tag}.tokenname')
 
         nssdb = self.instance.open_nssdb()
         try:
@@ -275,10 +275,10 @@ class PKISubsystem(object):
 
     def update_system_cert(self, cert):
         cert_id = cert['id']
-        self.config['%s.%s.nickname' % (self.name, cert_id)] = cert.get('nickname')
-        self.config['%s.%s.tokenname' % (self.name, cert_id)] = cert.get('token')
-        self.config['%s.%s.cert' % (self.name, cert_id)] = cert.get('data')
-        self.config['%s.%s.certreq' % (self.name, cert_id)] = cert.get('request')
+        self.config[f'{self.name}.{cert_id}.nickname'] = cert.get('nickname')
+        self.config[f'{self.name}.{cert_id}.tokenname'] = cert.get('token')
+        self.config[f'{self.name}.{cert_id}.cert'] = cert.get('data')
+        self.config[f'{self.name}.{cert_id}.certreq'] = cert.get('request')
 
     def validate_system_cert(self, cert_id=None):
 
@@ -308,10 +308,8 @@ class PKISubsystem(object):
 
         cert = self.get_subsystem_cert(cert_id)
         nickname = cert['nickname']
-        token = pki.nssdb.normalize_token(cert['token'])
-
-        if token:
-            nickname = token + ':' + nickname
+        if token := pki.nssdb.normalize_token(cert['token']):
+            nickname = f'{token}:{nickname}'
 
         tmpdir = tempfile.mkdtemp()
 
@@ -319,15 +317,18 @@ class PKISubsystem(object):
             # add the certificate, key, and chain
             cmd = [
                 'pki',
-                '-d', self.instance.nssdb_dir,
-                '-f', self.instance.password_conf
+                '-d',
+                self.instance.nssdb_dir,
+                '-f',
+                self.instance.password_conf,
+                *[
+                    'pkcs12-cert-import',
+                    '--pkcs12-file',
+                    pkcs12_file,
+                    '--pkcs12-password-file',
+                    pkcs12_password_file,
+                ],
             ]
-
-            cmd.extend([
-                'pkcs12-cert-import',
-                '--pkcs12-file', pkcs12_file,
-                '--pkcs12-password-file', pkcs12_password_file,
-            ])
 
             if no_key:
                 cmd.extend(['--no-key'])
@@ -430,8 +431,8 @@ class PKISubsystem(object):
     def validate(self):
         if not self.is_valid():
             raise pki.PKIException(
-                'Invalid subsystem: ' + self.__repr__(),
-                None, self.instance)
+                f'Invalid subsystem: {self.__repr__()}', None, self.instance
+            )
 
     def is_enabled(self):
         return self.instance.is_deployed(self.name)
@@ -481,7 +482,7 @@ class PKISubsystem(object):
         # must use 'http' protocol when FIPS mode is enabled
         secure_connection = not fips_mode
 
-        start_time = datetime.datetime.today()
+        start_time = datetime.datetime.now()
         ready = False
         counter = 0
 
@@ -496,11 +497,11 @@ class PKISubsystem(object):
             except requests.exceptions.SSLError as exc:
                 max_retry_error = exc.args[0]
                 reason = getattr(max_retry_error, 'reason')
-                raise Exception('Server unreachable due to SSL error: %s' % reason) from exc
+                raise Exception(f'Server unreachable due to SSL error: {reason}') from exc
 
             except pki.RETRYABLE_EXCEPTIONS as exc:
 
-                stop_time = datetime.datetime.today()
+                stop_time = datetime.datetime.now()
                 counter = (stop_time - start_time).total_seconds()
 
                 if startup_timeout is not None and counter >= startup_timeout:
@@ -514,15 +515,7 @@ class PKISubsystem(object):
 
     def enable(self, wait=False, max_wait=60, timeout=None):
 
-        if os.path.exists(self.doc_base):
-            # deploy custom subsystem if exists
-            doc_base = self.doc_base
-
-        else:
-            # otherwise deploy default subsystem directly from
-            # /usr/share/pki/<subsystem>/webapps/<subsystem>
-            doc_base = None
-
+        doc_base = self.doc_base if os.path.exists(self.doc_base) else None
         self.instance.deploy_webapp(
             self.name,
             self.default_context_xml,
@@ -547,26 +540,26 @@ class PKISubsystem(object):
                       bind_password=None):
 
         # TODO: add LDAPI support
-        hostname = self.config['%s.ldapconn.host' % name]
-        port = self.config['%s.ldapconn.port' % name]
-        secure = self.config['%s.ldapconn.secureConn' % name]
+        hostname = self.config[f'{name}.ldapconn.host']
+        port = self.config[f'{name}.ldapconn.port']
+        secure = self.config[f'{name}.ldapconn.secureConn']
 
         if secure == 'true':
-            url = 'ldaps://%s:%s' % (hostname, port)
+            url = f'ldaps://{hostname}:{port}'
 
         elif secure == 'false':
-            url = 'ldap://%s:%s' % (hostname, port)
+            url = f'ldap://{hostname}:{port}'
 
         else:
             raise Exception(
-                'Invalid parameter value in %s.ldapconn.secureConn: %s' %
-                (name, secure))
+                f'Invalid parameter value in {name}.ldapconn.secureConn: {secure}'
+            )
 
         connection = pki.server.PKIDatabaseConnection(url)
 
         connection.set_security_database(self.instance.nssdb_dir)
 
-        auth_type = self.config['%s.ldapauth.authtype' % name]
+        auth_type = self.config[f'{name}.ldapauth.authtype']
         if (bind_dn is not None and bind_password is not None):
             # connect using the provided credentials
             connection.set_credentials(
@@ -575,23 +568,24 @@ class PKISubsystem(object):
             )
         elif auth_type == 'BasicAuth':
             connection.set_credentials(
-                bind_dn=self.config['%s.ldapauth.bindDN' % name],
-                bind_password=self.instance.get_password(name)
+                bind_dn=self.config[f'{name}.ldapauth.bindDN'],
+                bind_password=self.instance.get_password(name),
             )
 
         elif auth_type == 'SslClientAuth':
             connection.set_credentials(
                 client_cert_nickname=self.config[
-                    '%s.ldapauth.clientCertNickname' % name],
-                # TODO: remove hard-coded token name
+                    f'{name}.ldapauth.clientCertNickname'
+                ],
                 nssdb_password=self.instance.get_token_password(
-                    pki.nssdb.INTERNAL_TOKEN_NAME)
+                    pki.nssdb.INTERNAL_TOKEN_NAME
+                ),
             )
 
         else:
             raise Exception(
-                'Invalid parameter value in %s.ldapauth.authtype: %s' %
-                (name, auth_type))
+                f'Invalid parameter value in {name}.ldapauth.authtype: {auth_type}'
+            )
 
         connection.open()
 
@@ -612,7 +606,7 @@ class PKISubsystem(object):
             raise ValueError("Please specify the Event name")
 
         if event_name not in self.get_audit_events():
-            raise pki.server.PKIServerException('Invalid audit event: %s' % event_name)
+            raise pki.server.PKIServerException(f'Invalid audit event: {event_name}')
 
         value = self.config['log.instance.SignedAudit.events']
         events = set(value.replace(' ', '').split(','))
@@ -632,9 +626,9 @@ class PKISubsystem(object):
             raise ValueError("Please specify the Event name")
 
         if event_name not in self.get_audit_events():
-            raise pki.server.PKIServerException('Invalid audit event: %s' % event_name)
+            raise pki.server.PKIServerException(f'Invalid audit event: {event_name}')
 
-        name = 'log.instance.SignedAudit.filters.%s' % event_name
+        name = f'log.instance.SignedAudit.filters.{event_name}'
 
         if event_filter:
             self.config[name] = event_filter
@@ -647,7 +641,7 @@ class PKISubsystem(object):
             raise ValueError("Please specify the Event name")
 
         if event_name not in self.get_audit_events():
-            raise pki.server.PKIServerException('Invalid audit event: %s' % event_name)
+            raise pki.server.PKIServerException(f'Invalid audit event: {event_name}')
 
         value = self.config['log.instance.SignedAudit.events']
         events = set(value.replace(' ', '').split(','))
@@ -677,11 +671,11 @@ class PKISubsystem(object):
 
         else:
             # return events enabled by default
-            names = set()
-            for name, event in events.items():
-                if enabled_by_default is event['enabled_by_default']:
-                    names.add(name)
-
+            names = {
+                name
+                for name, event in events.items()
+                if enabled_by_default is event['enabled_by_default']
+            }
         # apply "enabled" filter
         if enabled is None:
             # return all events
@@ -699,10 +693,13 @@ class PKISubsystem(object):
 
         # get event properties
         for name in sorted(names):
-            event = {}
-            event['name'] = name
-            event['enabled'] = name in enabled_events
-            event['filter'] = self.config.get('log.instance.SignedAudit.filters.%s' % name)
+            event = {
+                'name': name,
+                'enabled': name in enabled_events,
+                'filter': self.config.get(
+                    f'log.instance.SignedAudit.filters.{name}'
+                ),
+            }
             results.append(event)
 
         return results
@@ -710,16 +707,15 @@ class PKISubsystem(object):
     def get_audit_event_config(self, name):
 
         if name not in self.get_audit_events():
-            raise pki.server.PKIServerException('Invalid audit event: %s' % name)
+            raise pki.server.PKIServerException(f'Invalid audit event: {name}')
 
         enabled_event_names = self.get_enabled_audit_events()
 
-        event = {}
-        event['name'] = name
-        event['enabled'] = name in enabled_event_names
-        event['filter'] = self.config.get('log.instance.SignedAudit.filters.%s' % name)
-
-        return event
+        return {
+            'name': name,
+            'enabled': name in enabled_event_names,
+            'filter': self.config.get(f'log.instance.SignedAudit.filters.{name}'),
+        }
 
     def get_audit_events(self):
         '''
@@ -733,9 +729,7 @@ class PKISubsystem(object):
 
         try:
             # export audit-events.properties from pki-cms.jar
-            cms_jar = \
-                '/usr/share/pki/%s/webapps/%s/WEB-INF/lib/pki-cms.jar' \
-                % (self.name, self.name)
+            cms_jar = f'/usr/share/pki/{self.name}/webapps/{self.name}/WEB-INF/lib/pki-cms.jar'
 
             cmd = [
                 'jar',
@@ -797,17 +791,12 @@ class PKISubsystem(object):
         return files
 
     def __repr__(self):
-        return str(self.instance) + '/' + self.name
+        return f'{str(self.instance)}/{self.name}'
 
     def get_startup_tests(self):
         # Split the line 'selftest.container.selftests.startup'
         v = self.config.get('selftests.container.order.startup', '').strip()
-        if len(v) == 0:
-            # special case; empty value -> empty list
-            available_tests = []
-        else:
-            available_tests = v.split(',')
-
+        available_tests = [] if len(v) == 0 else v.split(',')
         target_tests = {}
         for testInfo in available_tests:
             temp = testInfo.split(':')
@@ -823,9 +812,12 @@ class PKISubsystem(object):
 
     def set_startup_tests(self, target_tests):
         # Remove unnecessary space, curly braces
-        self.config['selftests.container.order.startup'] = ", " \
-            .join([(key + ':' + SELFTEST_CRITICAL if val else key)
-                   for key, val in target_tests.items()])
+        self.config['selftests.container.order.startup'] = ", ".join(
+            [
+                f'{key}:{SELFTEST_CRITICAL}' if val else key
+                for key, val in target_tests.items()
+            ]
+        )
 
     def set_startup_test_criticality(self, critical, test=None):
         # Assume action to be taken on ALL available startup tests
@@ -835,7 +827,8 @@ class PKISubsystem(object):
         if test:
             if test not in target_tests:
                 raise pki.server.PKIServerException(
-                    'No such self test available for %s' % self.name)
+                    f'No such self test available for {self.name}'
+                )
             target_tests[test] = critical
         else:
             for testID in target_tests.keys():
@@ -854,7 +847,7 @@ class PKISubsystem(object):
         :return: (ca_signing_cert, aki, csr_file)
         """
 
-        csr_file = os.path.join(tmpdir, cert_tag + '.csr')
+        csr_file = os.path.join(tmpdir, f'{cert_tag}.csr')
         ca_cert_file = os.path.join(tmpdir, 'ca_certificate.crt')
 
         logger.debug('Exporting CSR for %s cert', cert_tag)
@@ -862,7 +855,7 @@ class PKISubsystem(object):
         # Retrieve CSR for cert_id
         cert_request = self.get_subsystem_cert(cert_tag).get('request')
         if cert_request is None:
-            raise pki.server.PKIServerException('Unable to find CSR for %s cert' % cert_tag)
+            raise pki.server.PKIServerException(f'Unable to find CSR for {cert_tag} cert')
 
         logger.debug('Retrieved CSR: %s', cert_request)
 
@@ -900,7 +893,7 @@ class PKISubsystem(object):
         logger.debug('Command: %s', ' '.join(ca_cert_retrieve_cmd))
         ca_cert_details = subprocess.check_output(ca_cert_retrieve_cmd).decode('utf-8')
 
-        aki = re.search(r'Subject Key Identifier.*\n.*?(.*?)\n', ca_cert_details).group(1)
+        aki = re.search(r'Subject Key Identifier.*\n.*?(.*?)\n', ca_cert_details)[1]
 
         # Add 0x to represent this as a Hex
         aki = '0x' + aki.strip().replace(':', '')
@@ -931,10 +924,11 @@ class PKISubsystem(object):
 
         if cert_tag != 'sslserver':
             raise pki.server.PKIServerException(
-                'Temp cert for %s is not supported yet.' % cert_tag)
+                f'Temp cert for {cert_tag} is not supported yet.'
+            )
 
         ca_signing_cert, aki, csr_file = \
-            self.setup_temp_renewal(tmpdir=tmpdir, cert_tag=cert_tag)
+                self.setup_temp_renewal(tmpdir=tmpdir, cert_tag=cert_tag)
 
         # --keyUsage
         key_usage_ext = {
@@ -957,7 +951,7 @@ class PKISubsystem(object):
 
         logger.debug('Creating temp cert')
 
-        rc = nssdb.create_cert(
+        if rc := nssdb.create_cert(
             issuer=ca_signing_cert['nickname'],
             request_file=csr_file,
             cert_file=new_cert_file,
@@ -965,9 +959,8 @@ class PKISubsystem(object):
             key_usage_ext=key_usage_ext,
             aki_ext=aki_ext,
             ext_key_usage_ext=ext_key_usage_ext,
-            use_jss=True)
-
-        if rc:
+            use_jss=True,
+        ):
             raise pki.server.PKIServerException(
                 'Failed to generate CA-signed temp SSL certificate. RC: %d' % rc)
 
@@ -979,7 +972,7 @@ class PKISubsystem(object):
             'ldapauth.clientCertNickname', 'database', 'basedn',
             'multipleSuffix.enable', 'maxConns', 'minConns',
         ]
-        db_keys = ['internaldb.{}'.format(x) for x in shortkeys]
+        db_keys = [f'internaldb.{x}' for x in shortkeys]
         return {k: v for k, v in self.config.items() if k in db_keys}
 
     def set_db_config(self, new_config):
@@ -1027,7 +1020,7 @@ class PKISubsystem(object):
             rebuild_indexes=False,
             as_current_user=False):
 
-        cmd = [self.name + '-db-init']
+        cmd = [f'{self.name}-db-init']
 
         if setup_schema:
             cmd.append('--setup-schema')
@@ -1054,7 +1047,7 @@ class PKISubsystem(object):
 
     def empty_database(self, force=False, as_current_user=False):
 
-        cmd = [self.name + '-db-empty']
+        cmd = [f'{self.name}-db-empty']
 
         if force:
             cmd.append('--force')
@@ -1069,7 +1062,7 @@ class PKISubsystem(object):
 
     def remove_database(self, force=False, as_current_user=False):
 
-        cmd = [self.name + '-db-remove']
+        cmd = [f'{self.name}-db-remove']
 
         if force:
             cmd.append('--force')
@@ -1087,7 +1080,7 @@ class PKISubsystem(object):
             dn,
             as_current_user=False):
 
-        cmd = [self.name + '-db-access-grant']
+        cmd = [f'{self.name}-db-access-grant']
 
         if logger.isEnabledFor(logging.DEBUG):
             cmd.append('--debug')
@@ -1107,7 +1100,7 @@ class PKISubsystem(object):
             dn,
             as_current_user=False):
 
-        cmd = [self.name + '-db-access-revoke']
+        cmd = [f'{self.name}-db-access-revoke']
 
         if logger.isEnabledFor(logging.DEBUG):
             cmd.append('--debug')
@@ -1134,7 +1127,7 @@ class PKISubsystem(object):
             master_config_file = os.path.join(tmpdir, 'master.conf')
             pki.util.store_properties(master_config_file, master_config)
 
-            cmd = [self.name + '-db-replication-setup']
+            cmd = [f'{self.name}-db-replication-setup']
 
             if master_replication_port:
                 cmd.extend(['--master-replication-port', master_replication_port])
@@ -1162,7 +1155,7 @@ class PKISubsystem(object):
 
     def find_vlv(self, as_current_user=False):
 
-        cmd = [self.name + '-db-vlv-find']
+        cmd = [f'{self.name}-db-vlv-find']
 
         if logger.isEnabledFor(logging.DEBUG):
             cmd.append('--debug')
@@ -1174,7 +1167,7 @@ class PKISubsystem(object):
 
     def add_vlv(self, as_current_user=False):
 
-        cmd = [self.name + '-db-vlv-add']
+        cmd = [f'{self.name}-db-vlv-add']
 
         if logger.isEnabledFor(logging.DEBUG):
             cmd.append('--debug')
@@ -1186,7 +1179,7 @@ class PKISubsystem(object):
 
     def delete_vlv(self, as_current_user=False):
 
-        cmd = [self.name + '-db-vlv-del']
+        cmd = [f'{self.name}-db-vlv-del']
 
         if logger.isEnabledFor(logging.DEBUG):
             cmd.append('--debug')
@@ -1198,7 +1191,7 @@ class PKISubsystem(object):
 
     def reindex_vlv(self, as_current_user=False):
 
-        cmd = [self.name + '-db-vlv-reindex']
+        cmd = [f'{self.name}-db-vlv-reindex']
 
         if logger.isEnabledFor(logging.DEBUG):
             cmd.append('--debug')
@@ -1219,14 +1212,19 @@ class PKISubsystem(object):
 
             cmd = [
                 'pki',
-                '-d', self.instance.nssdb_dir,
-                '-f', self.instance.password_conf,
-                '-U', master_url,
+                '-d',
+                self.instance.nssdb_dir,
+                '-f',
+                self.instance.password_conf,
+                '-U',
+                master_url,
                 '--ignore-banner',
-                '%s-range-request' % self.name,
+                f'{self.name}-range-request',
                 range_type,
-                '--install-token', install_token,
-                '--output-format', 'json'
+                '--install-token',
+                install_token,
+                '--output-format',
+                'json',
             ]
 
             if logger.isEnabledFor(logging.DEBUG):
@@ -1285,7 +1283,7 @@ class PKISubsystem(object):
 
     def update_ranges(self, as_current_user=False):
 
-        cmd = [self.name + '-range-update']
+        cmd = [f'{self.name}-range-update']
 
         if logger.isEnabledFor(logging.DEBUG):
             cmd.append('--debug')
@@ -1306,15 +1304,22 @@ class PKISubsystem(object):
 
             cmd = [
                 'pki',
-                '-d', self.instance.nssdb_dir,
-                '-f', self.instance.password_conf,
-                '-U', master_url,
+                '-d',
+                self.instance.nssdb_dir,
+                '-f',
+                self.instance.password_conf,
+                '-U',
+                master_url,
                 '--ignore-banner',
-                '%s-config-export' % self.name,
-                '--names', ','.join(names),
-                '--substores', ','.join(substores),
-                '--install-token', install_token,
-                '--output-format', 'json'
+                f'{self.name}-config-export',
+                '--names',
+                ','.join(names),
+                '--substores',
+                ','.join(substores),
+                '--install-token',
+                install_token,
+                '--output-format',
+                'json',
             ]
 
             if logger.isEnabledFor(logging.DEBUG):
@@ -1340,10 +1345,10 @@ class PKISubsystem(object):
                 continue
 
             elif name.startswith('cloning.ca'):
-                new_name = 'preop.ca' + name[10:]
+                new_name = f'preop.ca{name[10:]}'
 
             elif name.startswith('cloning'):
-                new_name = 'preop.cert' + name[7:]
+                new_name = f'preop.cert{name[7:]}'
 
             else:
                 new_name = name
@@ -1373,7 +1378,7 @@ class PKISubsystem(object):
 
     def create_security_domain(self, name=None, as_current_user=False):
 
-        cmd = [self.name + '-sd-create']
+        cmd = [f'{self.name}-sd-create']
 
         if logger.isEnabledFor(logging.DEBUG):
             cmd.append('--debug')
@@ -1396,10 +1401,7 @@ class PKISubsystem(object):
             clone=False,
             as_current_user=False):
 
-        cmd = [
-            self.name + '-sd-host-add',
-            '--hostname', hostname
-        ]
+        cmd = [f'{self.name}-sd-host-add', '--hostname', hostname]
 
         if unsecure_port:
             cmd.append('--unsecure-port')
@@ -1480,7 +1482,7 @@ class PKISubsystem(object):
 
     def find_groups(self, as_current_user=False):
 
-        cmd = [self.name + '-group-find']
+        cmd = [f'{self.name}-group-find']
 
         if logger.isEnabledFor(logging.DEBUG):
             cmd.append('--debug')
@@ -1492,7 +1494,7 @@ class PKISubsystem(object):
 
     def find_group_members(self, group_id, as_current_user=False):
 
-        cmd = [self.name + '-group-member-find']
+        cmd = [f'{self.name}-group-member-find']
 
         if logger.isEnabledFor(logging.DEBUG):
             cmd.append('--debug')
@@ -1500,11 +1502,7 @@ class PKISubsystem(object):
         elif logger.isEnabledFor(logging.INFO):
             cmd.append('--verbose')
 
-        cmd.append('--output-format')
-        cmd.append('json')
-
-        cmd.append(group_id)
-
+        cmd.extend(('--output-format', 'json', group_id))
         result = self.run(
             cmd,
             as_current_user=as_current_user,
@@ -1514,7 +1512,7 @@ class PKISubsystem(object):
 
     def add_group_member(self, group_id, member_id, as_current_user=False):
 
-        cmd = [self.name + '-group-member-add']
+        cmd = [f'{self.name}-group-member-add']
 
         if logger.isEnabledFor(logging.DEBUG):
             cmd.append('--debug')
@@ -1522,28 +1520,22 @@ class PKISubsystem(object):
         elif logger.isEnabledFor(logging.INFO):
             cmd.append('--verbose')
 
-        cmd.append(group_id)
-        cmd.append(member_id)
-
+        cmd.extend((group_id, member_id))
         self.run(cmd, as_current_user=as_current_user)
 
     def find_users(self, see_also=None, as_current_user=False):
 
-        cmd = [self.name + '-user-find']
+        cmd = [f'{self.name}-user-find']
 
         if see_also:
-            cmd.append('--see-also')
-            cmd.append(see_also)
-
+            cmd.extend(('--see-also', see_also))
         if logger.isEnabledFor(logging.DEBUG):
             cmd.append('--debug')
 
         elif logger.isEnabledFor(logging.INFO):
             cmd.append('--verbose')
 
-        cmd.append('--output-format')
-        cmd.append('json')
-
+        cmd.extend(('--output-format', 'json'))
         result = self.run(
             cmd,
             as_current_user=as_current_user,
@@ -1553,7 +1545,7 @@ class PKISubsystem(object):
 
     def get_user(self, user_id, as_current_user=False):
 
-        cmd = [self.name + '-user-show']
+        cmd = [f'{self.name}-user-show']
 
         if logger.isEnabledFor(logging.DEBUG):
             cmd.append('--debug')
@@ -1561,11 +1553,7 @@ class PKISubsystem(object):
         elif logger.isEnabledFor(logging.INFO):
             cmd.append('--verbose')
 
-        cmd.append('--output-format')
-        cmd.append('json')
-
-        cmd.append(user_id)
-
+        cmd.extend(('--output-format', 'json', user_id))
         result = self.run(
             cmd,
             as_current_user=as_current_user,
@@ -1593,36 +1581,22 @@ class PKISubsystem(object):
                 with open(password_file, 'w', encoding='utf-8') as f:
                     f.write(password)
 
-            cmd = [self.name + '-user-add']
+            cmd = [f'{self.name}-user-add']
 
             if full_name:
-                cmd.append('--full-name')
-                cmd.append(full_name)
-
+                cmd.extend(('--full-name', full_name))
             if email:
-                cmd.append('--email')
-                cmd.append(email)
-
+                cmd.extend(('--email', email))
             if password_file:
-                cmd.append('--password-file')
-                cmd.append(password_file)
-
+                cmd.extend(('--password-file', password_file))
             if phone:
-                cmd.append('--phone')
-                cmd.append(phone)
-
+                cmd.extend(('--phone', phone))
             if user_type:
-                cmd.append('--type')
-                cmd.append(user_type)
-
+                cmd.extend(('--type', user_type))
             if state:
-                cmd.append('--state')
-                cmd.append(state)
-
+                cmd.extend(('--state', state))
             if tps_profiles:
-                cmd.append('--tps-profiles')
-                cmd.append(','.join(tps_profiles))
-
+                cmd.extend(('--tps-profiles', ','.join(tps_profiles)))
             if logger.isEnabledFor(logging.DEBUG):
                 cmd.append('--debug')
 
@@ -1642,16 +1616,12 @@ class PKISubsystem(object):
     def modify_user(self, user_id, add_see_also=None, del_see_also=None,
                     as_current_user=False):
 
-        cmd = [self.name + '-user-mod']
+        cmd = [f'{self.name}-user-mod']
 
         if add_see_also:
-            cmd.append('--add-see-also')
-            cmd.append(add_see_also)
-
+            cmd.extend(('--add-see-also', add_see_also))
         if del_see_also:
-            cmd.append('--del-see-also')
-            cmd.append(del_see_also)
-
+            cmd.extend(('--del-see-also', del_see_also))
         if logger.isEnabledFor(logging.DEBUG):
             cmd.append('--debug')
 
@@ -1667,7 +1637,7 @@ class PKISubsystem(object):
 
     def remove_user(self, user_id, as_current_user=False):
 
-        cmd = [self.name + '-user-del']
+        cmd = [f'{self.name}-user-del']
 
         if logger.isEnabledFor(logging.DEBUG):
             cmd.append('--debug')
@@ -1688,16 +1658,12 @@ class PKISubsystem(object):
                       cert_format='PEM',
                       as_current_user=False):
 
-        cmd = [self.name + '-user-cert-add']
+        cmd = [f'{self.name}-user-cert-add']
 
         if cert_path:
-            cmd.append('--cert')
-            cmd.append(cert_path)
-
+            cmd.extend(('--cert', cert_path))
         if cert_format:
-            cmd.append('--format')
-            cmd.append(cert_format)
-
+            cmd.extend(('--format', cert_format))
         if logger.isEnabledFor(logging.DEBUG):
             cmd.append('--debug')
 
@@ -1722,12 +1688,11 @@ class PKISubsystem(object):
         java_opts = self.instance.config['JAVA_OPTS']
 
         classpath = [
-            pki.server.Tomcat.SHARE_DIR + '/bin/tomcat-juli.jar',
+            f'{pki.server.Tomcat.SHARE_DIR}/bin/tomcat-juli.jar',
             '/usr/share/java/tomcat-servlet-api.jar',
-            pki.server.PKIServer.SHARE_DIR + '/' +
-            self.name + '/webapps/' + self.name + '/WEB-INF/lib/*',
-            self.instance.common_lib_dir + '/*',
-            pki.server.PKIServer.SHARE_DIR + '/lib/*'
+            f'{pki.server.PKIServer.SHARE_DIR}/{self.name}/webapps/{self.name}/WEB-INF/lib/*',
+            f'{self.instance.common_lib_dir}/*',
+            f'{pki.server.PKIServer.SHARE_DIR}/lib/*',
         ]
 
         cmd = []
@@ -1740,19 +1705,20 @@ class PKISubsystem(object):
             if username != self.instance.user:
                 cmd.extend(['/usr/sbin/runuser', '-u', self.instance.user, '--'])
 
-        cmd.extend([java_home + '/bin/java'])
-
-        cmd.extend([
-            '-classpath', os.pathsep.join(classpath),
-            '-Djavax.sql.DataSource.Factory=org.apache.commons.dbcp.BasicDataSourceFactory',
-            '-Dcatalina.base=' + self.instance.base_dir,
-            '-Dcatalina.home=' + pki.server.Tomcat.SHARE_DIR,
-            '-Djava.endorsed.dirs=',
-            '-Djava.io.tmpdir=' + self.instance.temp_dir,
-            '-Djava.util.logging.config.file=' + self.instance.logging_properties,
-            '-Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager'
-        ])
-
+        cmd.extend(
+            [
+                f'{java_home}/bin/java',
+                '-classpath',
+                os.pathsep.join(classpath),
+                '-Djavax.sql.DataSource.Factory=org.apache.commons.dbcp.BasicDataSourceFactory',
+                f'-Dcatalina.base={self.instance.base_dir}',
+                f'-Dcatalina.home={pki.server.Tomcat.SHARE_DIR}',
+                '-Djava.endorsed.dirs=',
+                f'-Djava.io.tmpdir={self.instance.temp_dir}',
+                f'-Djava.util.logging.config.file={self.instance.logging_properties}',
+                '-Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager',
+            ]
+        )
         if java_opts:
             opts = java_opts.split(' ')
             non_empty_opts = [opt for opt in opts if opt]
@@ -1765,11 +1731,7 @@ class PKISubsystem(object):
         logger.debug('Command: %s', ' '.join(cmd))
 
         # https://stackoverflow.com/questions/53209127/subprocess-unexpected-keyword-argument-capture-output/53209196
-        if capture_output:
-            stdout = subprocess.PIPE
-        else:
-            stdout = None
-
+        stdout = subprocess.PIPE if capture_output else None
         try:
             return subprocess.run(
                 cmd,
@@ -1792,9 +1754,7 @@ class CASubsystem(PKISubsystem):
 
         profile_configs = []
         for root, _, files in os.walk(profiles_dir):
-            for filename in files:
-                profile_configs.append(os.path.join(root, filename))
-
+            profile_configs.extend(os.path.join(root, filename) for filename in files)
         return profile_configs
 
     def import_profiles(
@@ -1802,7 +1762,7 @@ class CASubsystem(PKISubsystem):
             input_folder=None,
             as_current_user=False):
 
-        cmd = [self.name + '-profile-import']
+        cmd = [f'{self.name}-profile-import']
 
         if input_folder:
             cmd.extend(['--input-folder', input_folder])
@@ -1954,7 +1914,7 @@ class CASubsystem(PKISubsystem):
 
         if cert:
             escaped_value = ldap.filter.escape_filter_chars(cert)
-            search_filter = '(extdata-req--005fissued--005fcert=%s)' % escaped_value
+            search_filter = f'(extdata-req--005fissued--005fcert={escaped_value})'
 
         else:
             search_filter = '(objectClass=*)'
@@ -1962,18 +1922,15 @@ class CASubsystem(PKISubsystem):
         con = self.open_database()
 
         entries = con.ldap.search_s(
-            'ou=ca,ou=requests,%s' % base_dn,
+            f'ou=ca,ou=requests,{base_dn}',
             ldap.SCOPE_ONELEVEL,
             search_filter,
-            None)
+            None,
+        )
 
         con.close()
 
-        cert_requests = []
-        for entry in entries:
-            cert_requests.append(self.create_request_object(entry))
-
-        return cert_requests
+        return [self.create_request_object(entry) for entry in entries]
 
     def import_cert_request(
             self,
@@ -2020,9 +1977,7 @@ class CASubsystem(PKISubsystem):
             if adjust_validity:
                 cmd.append('--adjust-validity')
 
-            cmd.append('--output-format')
-            cmd.append('json')
-
+            cmd.extend(('--output-format', 'json'))
             if request_id:
                 cmd.append(request_id)
 
@@ -2044,10 +1999,11 @@ class CASubsystem(PKISubsystem):
         con = self.open_database()
 
         entries = con.ldap.search_s(
-            'cn=%s,ou=ca,ou=requests,%s' % (request_id, base_dn),
+            f'cn={request_id},ou=ca,ou=requests,{base_dn}',
             ldap.SCOPE_BASE,
             '(objectClass=*)',
-            None)
+            None,
+        )
 
         con.close()
 
@@ -2058,12 +2014,11 @@ class CASubsystem(PKISubsystem):
 
         attrs = entry[1]
 
-        request = {}
-        request['id'] = attrs['cn'][0].decode('utf-8')
+        request = {'id': attrs['cn'][0].decode('utf-8')}
         request['type'] = attrs['requestType'][0].decode('utf-8')
         request['status'] = attrs['requestState'][0].decode('utf-8')
         request['request'] = attrs['extdata-cert--005frequest'][0] \
-            .decode('utf-8')
+                .decode('utf-8')
 
         return request
 
@@ -2081,8 +2036,8 @@ class CASubsystem(PKISubsystem):
             if value != subsystem_id:
                 continue
 
-            subsystem_number = m.group(1)
-            self.config['subsystem.%s.enabled' % subsystem_number] = 'true'
+            subsystem_number = m[1]
+            self.config[f'subsystem.{subsystem_number}.enabled'] = 'true'
 
     def disable_subsystem(self, subsystem_id):
 
@@ -2098,8 +2053,8 @@ class CASubsystem(PKISubsystem):
             if value != subsystem_id:
                 continue
 
-            subsystem_number = m.group(1)
-            self.config['subsystem.%s.enabled' % subsystem_number] = 'false'
+            subsystem_number = m[1]
+            self.config[f'subsystem.{subsystem_number}.enabled'] = 'false'
 
 
 class KRASubsystem(PKISubsystem):
@@ -2118,7 +2073,7 @@ class OCSPSubsystem(PKISubsystem):
             size=None,
             as_current_user=False):
 
-        cmd = [self.name + '-crl-issuingpoint-find']
+        cmd = [f'{self.name}-crl-issuingpoint-find']
 
         if size:
             cmd.extend(['--size', size])
@@ -2138,7 +2093,7 @@ class OCSPSubsystem(PKISubsystem):
             cert_format=None,
             as_current_user=False):
 
-        cmd = [self.name + '-crl-issuingpoint-add']
+        cmd = [f'{self.name}-crl-issuingpoint-add']
 
         if cert_chain_file:
             cmd.extend(['--cert-chain', cert_chain_file])

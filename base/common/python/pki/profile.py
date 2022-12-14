@@ -183,14 +183,8 @@ class ProfileInput(object):
         self.class_id = class_id
         self.name = name
         self.text = text
-        if attributes is None:
-            self.attributes = []
-        else:
-            self.attributes = attributes
-        if config_attributes is None:
-            self.config_attributes = []
-        else:
-            self.config_attributes = config_attributes
+        self.attributes = [] if attributes is None else attributes
+        self.config_attributes = [] if config_attributes is None else config_attributes
 
     def add_attribute(self, profile_attribute):
         """
@@ -215,11 +209,14 @@ class ProfileInput(object):
         Returns a ProfileAttribute object for the given name.
         None, if no match.
         """
-        for attr in self.attributes:
-            if attr.name == profile_attribute_name:
-                return attr
-
-        return None
+        return next(
+            (
+                attr
+                for attr in self.attributes
+                if attr.name == profile_attribute_name
+            ),
+            None,
+        )
 
     def add_config_attribute(self, profile_attribute):
         """
@@ -244,11 +241,14 @@ class ProfileInput(object):
         Returns a ProfileAttribute object with the given name.
         None, if there is no match in the config_attributes list.
         """
-        for attr in self.config_attributes:
-            if attr.name == config_attribute_name:
-                return attr
-
-        return None
+        return next(
+            (
+                attr
+                for attr in self.config_attributes
+                if attr.name == config_attribute_name
+            ),
+            None,
+        )
 
     @classmethod
     def from_json(cls, attr_list):
@@ -301,10 +301,7 @@ class ProfileOutput(object):
         self.name = name
         self.text = text
         self.class_id = class_id
-        if attributes is None:
-            self.attributes = []
-        else:
-            self.attributes = attributes
+        self.attributes = [] if attributes is None else attributes
 
     def add_attribute(self, profile_attribute):
         """
@@ -329,11 +326,14 @@ class ProfileOutput(object):
         Returns a ProfileAttribute object for the given name.
         None, if no match.
         """
-        for attr in self.attributes:
-            if attr.name == profile_attribute_name:
-                return attr
-
-        return None
+        return next(
+            (
+                attr
+                for attr in self.attributes
+                if attr.name == profile_attribute_name
+            ),
+            None,
+        )
 
     @classmethod
     def from_json(cls, attr_list):
@@ -392,14 +392,8 @@ class PolicyDefault(object):
         self.name = name
         self.class_id = class_id
         self.description = description
-        if policy_attributes is None:
-            self.policy_attributes = []
-        else:
-            self.policy_attributes = policy_attributes
-        if policy_params is None:
-            self.policy_params = []
-        else:
-            self.policy_params = policy_params
+        self.policy_attributes = [] if policy_attributes is None else policy_attributes
+        self.policy_params = [] if policy_params is None else policy_params
 
     def add_attribute(self, policy_attribute):
         """
@@ -423,11 +417,14 @@ class PolicyDefault(object):
         """
         Fetch the policy attribute with the given name from the attributes list.
         """
-        for attr in self.policy_attributes:
-            if attr.name == policy_attribute_name:
-                return attr
-
-        return None
+        return next(
+            (
+                attr
+                for attr in self.policy_attributes
+                if attr.name == policy_attribute_name
+            ),
+            None,
+        )
 
     def add_parameter(self, policy_parameter):
         """
@@ -451,11 +448,14 @@ class PolicyDefault(object):
         """
         Fetch a profile parameter with the given name from the parameters list.
         """
-        for param in self.policy_params:
-            if param.name == profile_parameter_name:
-                return param
-
-        return None
+        return next(
+            (
+                param
+                for param in self.policy_params
+                if param.name == profile_parameter_name
+            ),
+            None,
+        )
 
     @classmethod
     def from_json(cls, attr_list):
@@ -570,11 +570,14 @@ class PolicyConstraint(object):
         Returns a PolicyConstraintValue object with the given name.
         None, if there is no match.
         """
-        for constraint in self.policy_constraint_values:
-            if constraint.name == policy_constraint_value_name:
-                return constraint
-
-        return None
+        return next(
+            (
+                constraint
+                for constraint in self.policy_constraint_values
+                if constraint.name == policy_constraint_value_name
+            ),
+            None,
+        )
 
     @classmethod
     def from_json(cls, attr_list):
@@ -675,10 +678,7 @@ class PolicySet(object):
 
     def __init__(self, name=None, policy_list=None):
         self.name = name
-        if policy_list is None:
-            self.policy_list = []
-        else:
-            self.policy_list = policy_list
+        self.policy_list = [] if policy_list is None else policy_list
 
     def add_policy(self, profile_policy):
         """
@@ -701,10 +701,14 @@ class PolicySet(object):
         """
         Returns a ProfilePolicy object with the given profile id.
         """
-        for policy in self.policy_list:
-            if policy.policy_id == policy_id:
-                return policy
-        return None
+        return next(
+            (
+                policy
+                for policy in self.policy_list
+                if policy.policy_id == policy_id
+            ),
+            None,
+        )
 
     @classmethod
     def from_json(cls, attr_list):
@@ -730,10 +734,7 @@ class PolicySetList(object):
     """
 
     def __init__(self, policy_sets=None):
-        if policy_sets is None:
-            self.policy_sets = []
-        else:
-            self.policy_sets = policy_sets
+        self.policy_sets = [] if policy_sets is None else policy_sets
 
     def __iter__(self):
         return iter(self.policy_sets)
@@ -768,10 +769,14 @@ class PolicySetList(object):
         Fetch the PolicySet object for the given name.
         Returns None, if not found.
         """
-        for policy_set in self.policy_sets:
-            if policy_set.name == policy_set_name:
-                return policy_set
-        return None
+        return next(
+            (
+                policy_set
+                for policy_set in self.policy_sets
+                if policy_set.name == policy_set_name
+            ),
+            None,
+        )
 
     @classmethod
     def from_json(cls, attr_list):
@@ -820,14 +825,8 @@ class Profile(object):
         self.authorization_acl = authorization_acl
         self.renewal = renewal
         self.xml_output = xml_output
-        if inputs is None:
-            self.inputs = []
-        else:
-            self.inputs = inputs
-        if outputs is None:
-            self.outputs = []
-        else:
-            self.outputs = outputs
+        self.inputs = [] if inputs is None else inputs
+        self.outputs = [] if outputs is None else outputs
         if policy_set_list is None:
             self.policy_set_list = PolicySetList()
         else:
@@ -858,10 +857,14 @@ class Profile(object):
         Fetches a ProfileInput with the given ProfileInput id.
         Returns None, if there is no matching input.
         """
-        for profile_input in self.inputs:
-            if profile_input_id == profile_input.profile_input_id:
-                return profile_input
-        return None
+        return next(
+            (
+                profile_input
+                for profile_input in self.inputs
+                if profile_input_id == profile_input.profile_input_id
+            ),
+            None,
+        )
 
     def add_output(self, profile_output):
         """
@@ -886,10 +889,14 @@ class Profile(object):
         Fetches a ProfileOutput with the given ProfileOutput id.
         Returns None, if there is no matching output.
         """
-        for profile_input in self.inputs:
-            if profile_output_id == profile_input.profile_input_id:
-                return profile_input
-        return None
+        return next(
+            (
+                profile_input
+                for profile_input in self.inputs
+                if profile_output_id == profile_input.profile_input_id
+            ),
+            None,
+        )
 
     def add_policy_set(self, policy_set):
         """
@@ -984,7 +991,7 @@ class ProfileClient(object):
         self.profiles_url = '/rest/profiles'
 
         if connection.subsystem is None:
-            self.profiles_url = '/ca' + self.profiles_url
+            self.profiles_url = f'/ca{self.profiles_url}'
 
         self.headers = {'Content-type': 'application/json',
                         'Accept': 'application/json'}
@@ -1037,7 +1044,7 @@ class ProfileClient(object):
         """
         if profile_id is None:
             raise ValueError("Profile ID must be specified.")
-        url = self.profiles_url + '/' + str(profile_id)
+        url = f'{self.profiles_url}/{str(profile_id)}'
         r = self._get(url)
         return Profile.from_json(r.json())
 
@@ -1051,7 +1058,7 @@ class ProfileClient(object):
             raise ValueError("A valid action(enable/disable) must be "
                              "specified.")
 
-        url = self.profiles_url + '/' + str(profile_id)
+        url = f'{self.profiles_url}/{str(profile_id)}'
         params = {'action': action}
         self._post(url, query_params=params)
 
@@ -1088,7 +1095,7 @@ class ProfileClient(object):
             raise ValueError("Profile Id is not specified.")
         profile_object = json.dumps(profile_data, cls=encoder.CustomTypeEncoder,
                                     sort_keys=True)
-        url = self.profiles_url + '/' + str(profile_data.profile_id)
+        url = f'{self.profiles_url}/{str(profile_data.profile_id)}'
         r = self._put(url, profile_object)
 
         return Profile.from_json(r.json())
@@ -1133,9 +1140,8 @@ class ProfileClient(object):
         if profile_id is None:
             raise ValueError("Profile Id must be specified.")
 
-        url = self.profiles_url + '/' + str(profile_id)
-        r = self._delete(url)
-        return r
+        url = f'{self.profiles_url}/{str(profile_id)}'
+        return self._delete(url)
 
     encoder.NOTYPES['Profile'] = Profile
     encoder.NOTYPES['ProfileInput'] = ProfileInput
@@ -1173,20 +1179,20 @@ def main():
     print('List of profiles:')
     print('-----------------')
     for profile_data_info in profile_data_infos:
-        print('  Profile ID: ' + profile_data_info.profile_id)
-        print('  Profile Name: ' + profile_data_info.profile_name)
-        print('  Profile Description: ' + profile_data_info.profile_description)
+        print(f'  Profile ID: {profile_data_info.profile_id}')
+        print(f'  Profile Name: {profile_data_info.profile_name}')
+        print(f'  Profile Description: {profile_data_info.profile_description}')
     print()
 
     # Get a specific profile
     profile_data = profile_client.get_profile('caUserCert')
     print('Profile Data for caUserCert:')
     print('----------------------------')
-    print('  Profile ID: ' + profile_data.profile_id)
-    print('  Profile Name: ' + profile_data.name)
-    print('  Profile Description: ' + profile_data.description)
-    print('  Is profile enabled? ' + str(profile_data.enabled))
-    print('  Is profile visible? ' + str(profile_data.visible))
+    print(f'  Profile ID: {profile_data.profile_id}')
+    print(f'  Profile Name: {profile_data.name}')
+    print(f'  Profile Description: {profile_data.description}')
+    print(f'  Is profile enabled? {str(profile_data.enabled)}')
+    print(f'  Is profile visible? {str(profile_data.visible)}')
     print()
 
     # Disabling a profile
@@ -1194,8 +1200,8 @@ def main():
     print('--------------------')
     profile_client.disable_profile('caUserCert')
     profile = profile_client.get_profile('caUserCert')
-    print('  Profile ID: ' + profile.profile_id)
-    print('  Is profile enabled? ' + str(profile.enabled))
+    print(f'  Profile ID: {profile.profile_id}')
+    print(f'  Is profile enabled? {str(profile.enabled)}')
     print()
 
     # Disabling a profile
@@ -1203,8 +1209,8 @@ def main():
     print('-------------------')
     profile_client.enable_profile('caUserCert')
     profile = profile_client.get_profile('caUserCert')
-    print('  Profile ID: ' + profile_data.profile_id)
-    print('  Is profile enabled? ' + str(profile.enabled))
+    print(f'  Profile ID: {profile_data.profile_id}')
+    print(f'  Is profile enabled? {str(profile.enabled)}')
     print()
     # profile_client.delete_profile('MySampleProfile')
     # Create a new sample profile
@@ -1241,9 +1247,6 @@ def main():
 
     profile_data.add_output(profile_output)
 
-    # Create a Policy set with a list of profile policies
-    policy_list = []
-
     # Creating profile policy
     policy_default = PolicyDefault("Subject Name Default",
                                    "userSubjectNameDefaultImpl",
@@ -1265,8 +1268,7 @@ def main():
                                                     constraint_descriptor)
     policy_constraint.add_constraint_value(policy_constraint_value)
 
-    policy_list.append(ProfilePolicy("1", policy_default, policy_constraint))
-
+    policy_list = [ProfilePolicy("1", policy_default, policy_constraint)]
     # Creating another profile policy
     # Defining the policy default
     policy_default = PolicyDefault("Validity Default", "validityDefaultImpl",
@@ -1321,7 +1323,7 @@ def main():
     profile_data.add_policy_set(policy_set)
 
     # Write the profile data object to a file for testing a file input
-    with open(file_path + '/original.json', 'w', encoding='utf-8') as output_file:
+    with open(f'{file_path}/original.json', 'w', encoding='utf-8') as output_file:
         output_file.write(json.dumps(profile_data,
                                      cls=encoder.CustomTypeEncoder,
                                      sort_keys=True, indent=4))
@@ -1355,9 +1357,8 @@ def main():
 
         profile_data.add_input(profile_input)
         profile_client.create_profile(profile_data)
-    # pylint: disable=W0703
     except pki.BadRequestException as e:
-        print('MySampleProfile ' + str(e))
+        print(f'MySampleProfile {str(e)}')
     print()
 
     # Modify the above created profile
@@ -1373,7 +1374,7 @@ def main():
     fetch.name += " (Modified)"
     modified_profile = profile_client.modify_profile(fetch)
 
-    with open(file_path + 'modified.json', 'w', encoding='utf-8') as output_file:
+    with open(f'{file_path}modified.json', 'w', encoding='utf-8') as output_file:
         output_file.write(json.dumps(fetch, cls=encoder.CustomTypeEncoder,
                                      sort_keys=True, indent=4))
 
@@ -1392,31 +1393,28 @@ def main():
     print('----------------------')
     try:
         profile_client.get_profile('MySampleProfile')
-    # pylint: disable=W0703
     except pki.ProfileNotFoundException as e:
-        print(str(e))
+        print(e)
     print()
 
     # Creating a profile from file
     print('Creating a profile using file input.')
     print('------------------------------------')
-    original = profile_client.create_profile_from_file(
-        file_path + 'original.json')
+    original = profile_client.create_profile_from_file(f'{file_path}original.json')
     print(original)
     print()
 
     # Modifying a profile from file
     print('Modifying a profile using file input.')
     print('------------------------------------')
-    modified = profile_client.modify_profile_from_file(
-        file_path + 'modified.json')
+    modified = profile_client.modify_profile_from_file(f'{file_path}modified.json')
     print(modified)
     print()
 
     # Test clean up
     profile_client.delete_profile('MySampleProfile')
-    os.remove(file_path + 'original.json')
-    os.remove(file_path + 'modified.json')
+    os.remove(f'{file_path}original.json')
+    os.remove(f'{file_path}modified.json')
     os.removedirs(file_path)
 
 

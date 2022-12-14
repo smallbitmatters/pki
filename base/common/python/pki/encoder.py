@@ -97,7 +97,7 @@ class CustomTypeEncoder(json.JSONEncoder):
             return attr_dict
         reverse_dict = {v: k for k, v in
                         iteritems(object_class.json_attribute_names)}
-        new_dict = dict()
+        new_dict = {}
         for k, v in iteritems(attr_dict):
             if k in reverse_dict:
                 new_dict[reverse_dict[k]] = v
@@ -109,7 +109,7 @@ class CustomTypeEncoder(json.JSONEncoder):
 def CustomTypeDecoder(dct):  # nopep8
     if len(dct) == 1:
         type_name = list(dct)[0]
-        value = dct[type_name]
         if type_name in TYPES:
+            value = dct[type_name]
             return TYPES[type_name].from_dict(value)
     return dct

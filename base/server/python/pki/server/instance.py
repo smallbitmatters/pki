@@ -113,21 +113,25 @@ class PKIInstance(pki.server.PKIServer):
         self.with_maven_deps = False
 
     def __eq__(self, other):
-        if not isinstance(other, PKIInstance):
-            return NotImplemented
-        return (self.name == other.name and
-                self.version == other.version)
+        return (
+            (self.name == other.name and self.version == other.version)
+            if isinstance(other, PKIInstance)
+            else NotImplemented
+        )
 
     def __ne__(self, other):
-        if not isinstance(other, PKIInstance):
-            return NotImplemented
-        return not self.__eq__(other)
+        return (
+            not self.__eq__(other)
+            if isinstance(other, PKIInstance)
+            else NotImplemented
+        )
 
     def __lt__(self, other):
-        if not isinstance(other, PKIInstance):
-            return NotImplemented
-        return (self.name < other.name or
-                self.version < other.version)
+        return (
+            (self.name < other.name or self.version < other.version)
+            if isinstance(other, PKIInstance)
+            else NotImplemented
+        )
 
     def __hash__(self):
         return hash((self.name, self.version))
@@ -180,7 +184,7 @@ class PKIInstance(pki.server.PKIServer):
 
     @property
     def unit_file(self):
-        return PKIInstance.TARGET_WANTS + '/%s.service' % self.service_name
+        return f'{PKIInstance.TARGET_WANTS}/{self.service_name}.service'
 
     def execute(
             self, command,
@@ -282,7 +286,7 @@ class PKIInstance(pki.server.PKIServer):
         logger.debug('Command: %s', ' '.join(cmd))
         subprocess.check_call(cmd)
 
-        repo_dir = '%s/.m2/repository' % pathlib.Path.home()
+        repo_dir = f'{pathlib.Path.home()}/.m2/repository'
 
         pom_xml = '/usr/share/pki/pom.xml'
         logger.info('Loading %s', pom_xml)
@@ -316,7 +320,7 @@ class PKIInstance(pki.server.PKIServer):
 
             groupDir = groupId.replace('.', '/')
             directory = os.path.join(repo_dir, groupDir, artifactId, version)
-            filename = artifactId + '-' + version + '.' + fileType
+            filename = f'{artifactId}-{version}.{fileType}'
             source = os.path.join(directory, filename)
 
             # install Maven libraries in common/lib except slf4j
@@ -358,14 +362,12 @@ class PKIInstance(pki.server.PKIServer):
                 lines = registry.readlines()
 
             for line in lines:
-                m = re.search('^PKI_USER=(.*)$', line)
-                if m:
-                    self.user = m.group(1)
+                if m := re.search('^PKI_USER=(.*)$', line):
+                    self.user = m[1]
                     logger.debug('- user: %s', self.user)
 
-                m = re.search('^PKI_GROUP=(.*)$', line)
-                if m:
-                    self.group = m.group(1)
+                if m := re.search('^PKI_GROUP=(.*)$', line):
+                    self.group = m[1]
                     logger.debug('- group: %s', self.group)
 
         self.load_external_certs(self.external_certs_conf)
@@ -420,10 +422,10 @@ class PKIInstance(pki.server.PKIServer):
             for line in lines:
                 m = re.search('(\\d+)\\.(\\w+)=(.*)', line)
                 if not m:
-                    raise pki.PKIException('Error parsing %s' % conf_file)
-                indx = m.group(1)
-                attr = m.group(2)
-                value = m.group(3)
+                    raise pki.PKIException(f'Error parsing {conf_file}')
+                indx = m[1]
+                attr = m[2]
+                value = m[3]
                 if indx not in tmp_certs:
                     tmp_certs[indx] = pki.server.ExternalCert()
 
@@ -432,10 +434,10 @@ class PKIInstance(pki.server.PKIServer):
         return external_certs
 
     def external_cert_exists(self, nickname, token):
-        for cert in self.external_certs:
-            if cert.nickname == nickname and cert.token == token:
-                return True
-        return False
+        return any(
+            cert.nickname == nickname and cert.token == token
+            for cert in self.external_certs
+        )
 
     def add_external_cert(self, nickname, token):
         if self.external_cert_exists(nickname, token):
@@ -451,11 +453,9 @@ class PKIInstance(pki.server.PKIServer):
 
     def save_external_cert_data(self):
         with open(self.external_certs_conf, 'w', encoding='utf-8') as f:
-            indx = 0
-            for cert in self.external_certs:
+            for indx, cert in enumerate(self.external_certs):
                 f.write('%s.nickname=%s\n' % (str(indx), cert.nickname))
                 f.write('%s.token=%s\n' % (str(indx), cert.token))
-                indx += 1
 
     def export_external_certs(self, pkcs12_file, pkcs12_password_file,
                               append=False):
@@ -504,9 +504,7 @@ class PKIInstance(pki.server.PKIServer):
 
     def get_sslserver_cert_nickname(self):
 
-        nickname = super().get_sslserver_cert_nickname()
-
-        if nickname:
+        if nickname := super().get_sslserver_cert_nickname():
             return nickname
 
         # If not available, load SSL server cert nickname from serverCertNick.conf
@@ -539,7 +537,7 @@ class PKIInstance(pki.server.PKIServer):
         super().set_sslserver_cert_nickname(nickname, token)
 
         if pki.nssdb.normalize_token(token):
-            fullname = token + ':' + nickname
+            fullname = f'{token}:{nickname}'
         else:
             fullname = nickname
 
@@ -589,9 +587,7 @@ class PKIInstance(pki.server.PKIServer):
             raise Exception('Banner is empty')
 
     def __repr__(self):
-        if self.version == 9:
-            return "Dogtag 9 " + self.name
-        return self.name
+        return f"Dogtag 9 {self.name}" if self.version == 9 else self.name
 
     def cert_del(self, cert_id, remove_key=False):
         """
@@ -640,7 +636,7 @@ class PKIInstance(pki.server.PKIServer):
         :raises pki.server.PKIServerException
         """
         # store cert data and request in CS.cfg
-        if cert_id == 'sslserver' or cert_id == 'subsystem':
+        if cert_id in ['sslserver', 'subsystem']:
             # Update for all subsystems
             for subsystem in self.get_subsystems():
                 subsystem.update_system_cert(cert)
@@ -649,15 +645,12 @@ class PKIInstance(pki.server.PKIServer):
             # Extract subsystem_name from cert_id
             subsystem_name = cert_id.split('_', 1)[0]
 
-            # Load the corresponding subsystem
-            subsystem = self.get_subsystem(subsystem_name)
-
-            if subsystem:
-                subsystem.update_system_cert(cert)
-                subsystem.save()
-            else:
+            if not (subsystem := self.get_subsystem(subsystem_name)):
                 raise pki.server.PKIServerException(
-                    'No subsystem can be loaded for %s in instance %s.' % (cert_id, self.name))
+                    f'No subsystem can be loaded for {cert_id} in instance {self.name}.'
+                )
+            subsystem.update_system_cert(cert)
+            subsystem.save()
 
     @property
     def cert_folder(self):
@@ -665,7 +658,7 @@ class PKIInstance(pki.server.PKIServer):
 
     def cert_file(self, cert_id):
         """Compute name of certificate under instance cert folder."""
-        return os.path.join(self.cert_folder, cert_id + '.crt')
+        return os.path.join(self.cert_folder, f'{cert_id}.crt')
 
     def nssdb_import_cert(self, cert_id, cert_file=None):
         """
@@ -703,7 +696,7 @@ class PKIInstance(pki.server.PKIServer):
                 cert_file = self.cert_file(cert_id)
 
             if not os.path.isfile(cert_file):
-                raise pki.server.PKIServerException('%s does not exist.' % cert_file)
+                raise pki.server.PKIServerException(f'{cert_file} does not exist.')
 
             cert = subsystem.get_subsystem_cert(cert_tag)
 
@@ -715,7 +708,8 @@ class PKIInstance(pki.server.PKIServer):
                     nickname=cert['nickname'],
                     token=cert['token']):
                 raise pki.server.PKIServerException(
-                    'Certificate already exists: %s in subsystem %s' % (cert_tag, self.name))
+                    f'Certificate already exists: {cert_tag} in subsystem {self.name}'
+                )
 
             logger.debug('Importing new %s certificate into NSS database'
                          ' for subsys %s, instance %s',
@@ -809,7 +803,7 @@ class PKIInstance(pki.server.PKIServer):
 
         try:
             if cert_id:
-                new_cert_file = output if output else self.cert_file(cert_id)
+                new_cert_file = output or self.cert_file(cert_id)
 
                 subsystem_name, cert_tag = pki.server.PKIServer.split_cert_id(cert_id)
                 if not subsystem_name:
@@ -919,14 +913,14 @@ class PKIInstance(pki.server.PKIServer):
 
             # remove existing 'requiredSecret' if any
             value = connector.attrib.pop('requiredSecret', None)
-            print('AJP connector requiredSecret: %s' % value)
+            print(f'AJP connector requiredSecret: {value}')
 
             if connector.get('secret'):
                 # already has a 'secret' -> skip
                 continue
 
             if not value:
-                raise Exception('Missing AJP connector secret in %s' % self.server_xml)
+                raise Exception(f'Missing AJP connector secret in {self.server_xml}')
 
             # store 'secret'
             connector.set('secret', value)
@@ -973,14 +967,14 @@ class PKIInstance(pki.server.PKIServer):
 
             # remove existing 'secret' if any
             value = connector.attrib.pop('secret', None)
-            print('AJP connector secret: %s' % value)
+            print(f'AJP connector secret: {value}')
 
             if connector.get('requiredSecret'):
                 # already has a 'requiredSecret' -> skip
                 continue
 
             if not value:
-                raise Exception('Missing AJP connector requiredSecret in %s' % self.server_xml)
+                raise Exception(f'Missing AJP connector requiredSecret in {self.server_xml}')
 
             # store 'requiredSecret'
             connector.set('requiredSecret', value)
@@ -1031,7 +1025,7 @@ class PKIServerFactory(object):
         '''
 
         if name.endswith('.service'):
-            name = name[0:-8]
+            name = name[:-8]
 
         parts = name.split('@')
 
@@ -1051,7 +1045,7 @@ class PKIServerFactory(object):
                 nuxwdog_status = re.search('^USE_NUXWDOG=\"(.*)\"', f.read(), re.MULTILINE)
 
                 # Check if the regex was matched and then check if nuxwdog is enabled.
-                if nuxwdog_status and nuxwdog_status.group(1) == "true":
+                if nuxwdog_status and nuxwdog_status[1] == "true":
                     instance_type += '-nuxwdog'
 
         logger.info("Loading instance type: %s", instance_type)
@@ -1062,4 +1056,4 @@ class PKIServerFactory(object):
         if instance_type.startswith('pki-tomcatd'):
             return PKIInstance(instance_name, instance_type=instance_type)
 
-        raise Exception('Unsupported instance type: %s' % instance_type)
+        raise Exception(f'Unsupported instance type: {instance_type}')

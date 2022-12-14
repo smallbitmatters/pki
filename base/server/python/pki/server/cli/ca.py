@@ -560,12 +560,12 @@ class CACertRequestCLI(pki.cli.CLI):
 
     @staticmethod
     def print_request(request, details=False):
-        print('  Request ID: %s' % request['id'])
-        print('  Type: %s' % request['type'])
-        print('  Status: %s' % request['status'])
+        print(f"  Request ID: {request['id']}")
+        print(f"  Type: {request['type']}")
+        print(f"  Status: {request['status']}")
 
         if details:
-            print('  Request: %s' % request['request'])
+            print(f"  Request: {request['request']}")
 
 
 class CACertRequestFindCLI(pki.cli.CLI):
@@ -639,7 +639,7 @@ class CACertRequestFindCLI(pki.cli.CLI):
 
         results = subsystem.find_cert_requests(cert=cert)
 
-        self.print_message('%s entries matched' % len(results))
+        self.print_message(f'{len(results)} entries matched')
 
         first = True
         for request in results:

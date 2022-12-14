@@ -314,12 +314,12 @@ class CertSearchRequest(object):
     def __init__(self, **cert_search_params):
         """ Constructor """
 
-        if len(cert_search_params) == 0:
+        if not cert_search_params:
             setattr(self, 'serialNumberRangeInUse', True)
 
         for param, value in iteritems(cert_search_params):
             if param not in CertSearchRequest.search_params:
-                raise ValueError('Invalid search parameter: ' + param)
+                raise ValueError(f'Invalid search parameter: {param}')
 
             if param in {'serial_to', 'serial_from'}:
                 setattr(self, CertSearchRequest.search_params[param], value)
@@ -402,9 +402,8 @@ class CertRevokeRequest(object):
 
         if reason is None:
             reason = 'Unspecified'
-        else:
-            if reason not in CertRevokeRequest.reasons:
-                raise ValueError('Invalid revocation reason specified.')
+        elif reason not in CertRevokeRequest.reasons:
+            raise ValueError('Invalid revocation reason specified.')
         setattr(self, "Reason", reason)
         if invalidity_date is not None:
             setattr(self, "InvalidityDate", invalidity_date)
@@ -434,14 +433,8 @@ class CertEnrollmentRequest(object):
         self.serial_number = serial_number
         self.remote_host = remote_host
         self.remote_address = remote_address
-        if inputs is None:
-            self.inputs = []
-        else:
-            self.inputs = inputs
-        if outputs is None:
-            self.outputs = []
-        else:
-            self.outputs = outputs
+        self.inputs = [] if inputs is None else inputs
+        self.outputs = [] if outputs is None else outputs
 
     def add_input(self, profile_input):
         self.inputs.append(profile_input)
@@ -453,11 +446,14 @@ class CertEnrollmentRequest(object):
                 break
 
     def get_input(self, profile_input_name):
-        for profile_input in self.inputs:
-            if profile_input_name == profile_input.name:
-                return profile_input
-
-        return None
+        return next(
+            (
+                profile_input
+                for profile_input in self.inputs
+                if profile_input_name == profile_input.name
+            ),
+            None,
+        )
 
     def add_output(self, profile_output):
         self.outputs.append(profile_output)
@@ -469,11 +465,14 @@ class CertEnrollmentRequest(object):
                 break
 
     def get_output(self, profile_output_name):
-        for output in self.outputs:
-            if profile_output_name == output.name:
-                return output
-
-        return None
+        return next(
+            (
+                output
+                for output in self.outputs
+                if profile_output_name == output.name
+            ),
+            None,
+        )
 
     @classmethod
     def from_json(cls, attr_list):
@@ -488,8 +487,7 @@ class CertEnrollmentRequest(object):
                 else:
                     setattr(enroll_request, k, v)
 
-        inputs = attr_list.get('Input')
-        if inputs:
+        if inputs := attr_list.get('Input'):
             if not isinstance(inputs, list):
                 enroll_request.inputs.append(
                     profile.ProfileInput.from_json(inputs))
@@ -498,8 +496,7 @@ class CertEnrollmentRequest(object):
                     enroll_request.inputs.append(
                         profile.ProfileInput.from_json(profile_input))
 
-        outputs = attr_list.get('Output')
-        if outputs:
+        if outputs := attr_list.get('Output'):
             if not isinstance(outputs, list):
                 enroll_request.outputs.append(
                     profile.ProfileOutput.from_json(outputs))
@@ -564,10 +561,7 @@ class CertReviewResponse(CertEnrollmentRequest):
         self.profile_remote_host = profile_remote_host
         self.profile_remote_address = profile_remote_address
 
-        if policy_sets is None:
-            self.policy_sets = []
-        else:
-            self.policy_sets = policy_sets
+        self.policy_sets = [] if policy_sets is None else policy_sets
 
     @classmethod
     def from_json(cls, attr_list):
@@ -611,10 +605,10 @@ class CertClient(object):
         self.agent_cert_requests_url = '/rest/agent/certrequests'
 
         if connection.subsystem is None:
-            self.cert_url = '/ca' + self.cert_url
-            self.agent_cert_url = '/ca' + self.agent_cert_url
-            self.cert_requests_url = '/ca' + self.cert_requests_url
-            self.agent_cert_requests_url = '/ca' + self.agent_cert_requests_url
+            self.cert_url = f'/ca{self.cert_url}'
+            self.agent_cert_url = f'/ca{self.agent_cert_url}'
+            self.cert_requests_url = f'/ca{self.cert_requests_url}'
+            self.agent_cert_requests_url = f'/ca{self.agent_cert_requests_url}'
 
         self.headers = {'Content-type': 'application/json',
                         'Accept': 'application/json'}
@@ -627,7 +621,7 @@ class CertClient(object):
         if cert_serial_number is None:
             raise ValueError("Certificate ID must be specified")
 
-        url = self.cert_url + '/' + str(cert_serial_number)
+        url = f'{self.cert_url}/{str(cert_serial_number)}'
         r = self.connection.get(url, self.headers)
         # print r.json()
         return CertData.from_json(r.json())
@@ -639,7 +633,7 @@ class CertClient(object):
             the certificates that satisfy the search criteria.
             If cert_search_request=None, returns all the certificates.
         """
-        url = self.cert_url + '/search'
+        url = f'{self.cert_url}/search'
         query_params = {"maxResults": max_results, "maxTime": max_time,
                         "start": start, "size": size}
         cert_search_request = CertSearchRequest(**cert_search_params)
@@ -659,7 +653,7 @@ class CertClient(object):
         if cert_serial_number is None:
             raise ValueError("Certificate ID must be specified")
 
-        url = self.agent_cert_url + '/' + str(cert_serial_number)
+        url = f'{self.agent_cert_url}/{str(cert_serial_number)}'
         r = self.connection.get(url, self.headers)
         return CertData.from_json(r.json())
 
@@ -708,7 +702,7 @@ class CertClient(object):
             This method requires an agent's authentication cert in the
             connection object.
         """
-        url = self.agent_cert_url + '/' + str(cert_serial_number) + '/revoke'
+        url = f'{self.agent_cert_url}/{str(cert_serial_number)}/revoke'
         return self._submit_revoke_request(url, cert_serial_number,
                                            revocation_reason, invalidity_date,
                                            comments, nonce, authority)
@@ -722,8 +716,7 @@ class CertClient(object):
             This method requires an agent's authentication cert in the
             connection object.
         """
-        url = self.agent_cert_url + '/' + str(cert_serial_number) + \
-            '/revoke-ca'
+        url = f'{self.agent_cert_url}/{str(cert_serial_number)}/revoke-ca'
         return self._submit_revoke_request(url, cert_serial_number,
                                            revocation_reason, invalidity_date,
                                            comments, nonce, authority)
@@ -750,7 +743,7 @@ class CertClient(object):
         if cert_serial_number is None:
             raise ValueError("Certificate ID must be specified")
 
-        url = self.agent_cert_url + '/' + str(cert_serial_number) + '/unrevoke'
+        url = f'{self.agent_cert_url}/{str(cert_serial_number)}/unrevoke'
 
         params = {}
         if authority is not None:
@@ -773,7 +766,7 @@ class CertClient(object):
 
         if request_id is None:
             raise ValueError("Request ID must be specified")
-        url = self.cert_requests_url + '/' + str(request_id)
+        url = f'{self.cert_requests_url}/{str(request_id)}'
         r = self.connection.get(url, headers=self.headers)
 
         return CertRequestInfo.from_json(r.json())
@@ -809,7 +802,7 @@ class CertClient(object):
         if request_id is None:
             raise ValueError("Request Id must be specified.")
 
-        url = self.agent_cert_requests_url + '/' + str(request_id)
+        url = f'{self.agent_cert_requests_url}/{str(request_id)}'
         r = self.connection.get(url, headers=self.headers)
         return CertReviewResponse.from_json(r.json())
 
@@ -825,13 +818,11 @@ class CertClient(object):
         if cert_review_response is None:
             cert_review_response = self.review_request(request_id)
 
-        url = self.agent_cert_requests_url + '/' + request_id + '/' + action
+        url = f'{self.agent_cert_requests_url}/{request_id}/{action}'
         review_response = json.dumps(cert_review_response,
                                      cls=encoder.CustomTypeEncoder,
                                      sort_keys=True)
-        # print review_response
-        r = self.connection.post(url, review_response, headers=self.headers)
-        return r
+        return self.connection.post(url, review_response, headers=self.headers)
 
     def approve_request(self, request_id, cert_review_response=None):
         """
@@ -908,7 +899,7 @@ class CertClient(object):
         Returns a ProfileDataInfoCollection object.
         """
 
-        url = self.cert_requests_url + '/profiles'
+        url = f'{self.cert_requests_url}/profiles'
         query_params = {
             'start': start,
             'size': size
@@ -930,7 +921,7 @@ class CertClient(object):
             raise ValueError("Profile ID must be specified.")
         if profile_id in self.enrollment_templates:
             return copy.deepcopy(self.enrollment_templates[profile_id])
-        url = self.cert_requests_url + '/profiles/' + str(profile_id)
+        url = f'{self.cert_requests_url}/profiles/{str(profile_id)}'
         r = self.connection.get(url, self.headers)
         enrollment_request = r.json()
         logger.info('Enrollment request: %s', enrollment_request)
@@ -1014,8 +1005,7 @@ class CertClient(object):
         ret = []
         for cert_request_info in cert_request_infos.cert_request_info_list:
             status = cert_request_info.request_status
-            if status == CertRequestStatus.REJECTED or \
-                    status == CertRequestStatus.CANCELED:
+            if status in [CertRequestStatus.REJECTED, CertRequestStatus.CANCELED]:
                 ret.append(
                     CertEnrollmentResult(cert_request_info, None)
                 )
@@ -1069,35 +1059,23 @@ def main():
     print('Enrolling an user certificate')
     print('-----------------------------')
 
-    inputs = dict()
-    inputs['cert_request_type'] = 'crmf'
-    inputs['cert_request'] = "MIIBpDCCAaAwggEGAgUA5n9VYTCBx4ABAqUOMAwxCjAIBgN" \
-                             "VBAMTAXimgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAK" \
-                             "/SmUVoUjBtqHNw/e3OoCSXw42pdQSR53/eYJWpf7nyTbZ9U" \
-                             "uIhGfXOtxy5vRetmDHE9u0AopmuJbr1rL17/tSnDakpkE9u" \
-                             "mQ2lMOReLloSdX32w2xOeulUwh5BGbFpq10S0SvW1H93Vn0" \
-                             "eCy2aa4UtILNEsp7JJ3FnYJibfuMPAgMBAAGpEDAOBgNVHQ" \
-                             "8BAf8EBAMCBeAwMzAVBgkrBgEFBQcFAQEMCHJlZ1Rva2VuM" \
-                             "BoGCSsGAQUFBwUBAgwNYXV0aGVudGljYXRvcqGBkzANBgkq" \
-                             "hkiG9w0BAQUFAAOBgQCuywnrDk/wGwfbguw9oVs9gzFQwM4" \
-                             "zeFbk+z82G5CWoG/4mVOT5LPL5Q8iF+KfnaU9Qcu6zZPxW6" \
-                             "ZmDd8WpPJ+MTPyQl3Q5BfiKa4l5ra1NeqxMOlMiiupwINmm" \
-                             "7jd1KaA2eIjuyC8/gTaO4b14R6aRaOj+Scp9cNYbthA7REh" \
-                             "Jw=="
-    inputs['sn_uid'] = 'test12345'
-    inputs['sn_e'] = 'example@redhat.com'
-    inputs['sn_cn'] = 'TestUser'
-
+    inputs = {
+        'cert_request_type': 'crmf',
+        'cert_request': "MIIBpDCCAaAwggEGAgUA5n9VYTCBx4ABAqUOMAwxCjAIBgNVBAMTAXimgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAK/SmUVoUjBtqHNw/e3OoCSXw42pdQSR53/eYJWpf7nyTbZ9UuIhGfXOtxy5vRetmDHE9u0AopmuJbr1rL17/tSnDakpkE9umQ2lMOReLloSdX32w2xOeulUwh5BGbFpq10S0SvW1H93Vn0eCy2aa4UtILNEsp7JJ3FnYJibfuMPAgMBAAGpEDAOBgNVHQ8BAf8EBAMCBeAwMzAVBgkrBgEFBQcFAQEMCHJlZ1Rva2VuMBoGCSsGAQUFBwUBAgwNYXV0aGVudGljYXRvcqGBkzANBgkqhkiG9w0BAQUFAAOBgQCuywnrDk/wGwfbguw9oVs9gzFQwM4zeFbk+z82G5CWoG/4mVOT5LPL5Q8iF+KfnaU9Qcu6zZPxW6ZmDd8WpPJ+MTPyQl3Q5BfiKa4l5ra1NeqxMOlMiiupwINmm7jd1KaA2eIjuyC8/gTaO4b14R6aRaOj+Scp9cNYbthA7REhJw==",
+        'sn_uid': 'test12345',
+        'sn_e': 'example@redhat.com',
+        'sn_cn': 'TestUser',
+    }
     enrollment_results = cert_client.enroll_cert('caUserCert', inputs)
 
     for enrollment_result in enrollment_results:
         request_data = enrollment_result.request
         cert_data = enrollment_result.cert
-        print('Request ID: ' + request_data.request_id)
-        print('Request Status:' + request_data.request_status)
-        print('Serial Number: ' + cert_data.serial_number)
-        print('Issuer: ' + cert_data.issuer_dn)
-        print('Subject: ' + cert_data.subject_dn)
+        print(f'Request ID: {request_data.request_id}')
+        print(f'Request Status:{request_data.request_status}')
+        print(f'Serial Number: {cert_data.serial_number}')
+        print(f'Issuer: {cert_data.issuer_dn}')
+        print(f'Subject: {cert_data.subject_dn}')
         print('Pretty Print:')
         print(cert_data.pretty_repr)
 
@@ -1107,37 +1085,25 @@ def main():
     print("Enrolling a server certificate")
     print('------------------------------')
 
-    inputs = dict()
-    inputs['cert_request_type'] = 'pkcs10'
-    inputs['cert_request'] = "MIIBmDCCAQECAQAwWDELMAkGA1UEBhMCVVMxCzAJBgNVBAg" \
-                             "MAk5DMRAwDgYDVQQHDAdSYWxlaWdoMRUwEwYDVQQKDAxSZW" \
-                             "QgSGF0IEluYy4xEzARBgNVBAMMClRlc3RTZXJ2ZXIwgZ8wD" \
-                             "QYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAMJpWz92dSYCvWxl" \
-                             "lrQCY5atPKCswUwyppRNGPnKmJ77AdHBBI4dFyET+h/+69j" \
-                             "QMTLZMa8FX7SbyHvgbgLBP4Q/RzCSE2S87qFNjriOqiQCqJ" \
-                             "mcrzDzdncJQiP+O7T6MSpLo3smLP7dK1Vd7vK0Vy8yHwV0e" \
-                             "Bx7DgYedv2slBPHAgMBAAGgADANBgkqhkiG9w0BAQUFAAOB" \
-                             "gQBvkxAGKwkfK3TKwLc5Mg0IWp8zGRVwxdIlghAL8DugNoc" \
-                             "CNNgmZazglJOOehLuk0/NkLX1ZM5RrVgM09W6kcfWZtIwr5" \
-                             "Uje2K/+6tW2ZTGrbizs7CNOTMzA/9H8CkHb4H9P/qRT275z" \
-                             "HIocYj4smUnXLwWGsBMeGs+OMMbGvSrHg=="
-
-    inputs['requestor_name'] = 'Tester'
-    inputs['requestor_email'] = 'example@redhat.com'
-
+    inputs = {
+        'cert_request_type': 'pkcs10',
+        'cert_request': "MIIBmDCCAQECAQAwWDELMAkGA1UEBhMCVVMxCzAJBgNVBAgMAk5DMRAwDgYDVQQHDAdSYWxlaWdoMRUwEwYDVQQKDAxSZWQgSGF0IEluYy4xEzARBgNVBAMMClRlc3RTZXJ2ZXIwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAMJpWz92dSYCvWxllrQCY5atPKCswUwyppRNGPnKmJ77AdHBBI4dFyET+h/+69jQMTLZMa8FX7SbyHvgbgLBP4Q/RzCSE2S87qFNjriOqiQCqJmcrzDzdncJQiP+O7T6MSpLo3smLP7dK1Vd7vK0Vy8yHwV0eBx7DgYedv2slBPHAgMBAAGgADANBgkqhkiG9w0BAQUFAAOBgQBvkxAGKwkfK3TKwLc5Mg0IWp8zGRVwxdIlghAL8DugNocCNNgmZazglJOOehLuk0/NkLX1ZM5RrVgM09W6kcfWZtIwr5Uje2K/+6tW2ZTGrbizs7CNOTMzA/9H8CkHb4H9P/qRT275zHIocYj4smUnXLwWGsBMeGs+OMMbGvSrHg==",
+        'requestor_name': 'Tester',
+        'requestor_email': 'example@redhat.com',
+    }
     cert_id = None
     enrollment_results_2 = cert_client.enroll_cert('caServerCert', inputs)
     for enrollment_result in enrollment_results_2:
         request_data = enrollment_result.request
         cert_data = enrollment_result.cert
-        print('Request ID: ' + request_data.request_id)
-        print('Request Status:' + request_data.request_status)
+        print(f'Request ID: {request_data.request_id}')
+        print(f'Request Status:{request_data.request_status}')
         if cert_data is not None:
             # store cert_id for usage later
             cert_id = cert_data.serial_number
-            print('Serial Number: ' + cert_id)
-            print('Issuer: ' + cert_data.issuer_dn)
-            print('Subject: ' + cert_data.subject_dn)
+            print(f'Serial Number: {cert_id}')
+            print(f'Issuer: {cert_data.issuer_dn}')
+            print(f'Subject: {cert_data.subject_dn}')
             print('Pretty Print:')
             print(cert_data.pretty_repr)
 
@@ -1150,18 +1116,18 @@ def main():
     search_params = {'status': 'VALID'}
     cert_data_list = cert_client.list_certs(**search_params)
     for cert_data_info in cert_data_list:
-        print("Serial Number: " + cert_data_info.serial_number)
-        print("Subject DN: " + cert_data_info.subject_dn)
-        print("Status: " + cert_data_info.status)
+        print(f"Serial Number: {cert_data_info.serial_number}")
+        print(f"Subject DN: {cert_data_info.subject_dn}")
+        print(f"Status: {cert_data_info.status}")
     print()
 
     # Trying to get a non-existing cert
     # Assuming that there is no certificate with serial number = 100
     try:
         cert_data = cert_client.get_cert(100)
-        print('Serial Number: ' + cert_data.serial_number)
-        print('Issuer: ' + cert_data.issuer_dn)
-        print('Subject: ' + cert_data.subject_dn)
+        print(f'Serial Number: {cert_data.serial_number}')
+        print(f'Issuer: {cert_data.issuer_dn}')
+        print(f'Subject: {cert_data.subject_dn}')
     except pki.CertNotFoundException:
         print("Certificate with ID 100 does not exist")
         print()
@@ -1177,12 +1143,12 @@ def main():
 
     cert_data = cert_client.get_cert(cert_id)
     # Print the certificate information
-    print('Serial Number: ' + cert_data.serial_number)
-    print('Issuer: ' + cert_data.issuer_dn)
-    print('Subject: ' + cert_data.subject_dn)
-    print('Status: ' + cert_data.status)
-    print('Not Before: ' + cert_data.not_before)
-    print('Not After: ' + cert_data.not_after)
+    print(f'Serial Number: {cert_data.serial_number}')
+    print(f'Issuer: {cert_data.issuer_dn}')
+    print(f'Subject: {cert_data.subject_dn}')
+    print(f'Status: {cert_data.status}')
+    print(f'Not Before: {cert_data.not_before}')
+    print(f'Not After: {cert_data.not_after}')
     print('Encoded: ')
     print(cert_data.encoded)
     print("Pretty print format: ")
@@ -1194,11 +1160,11 @@ def main():
     print('-----------------------')
 
     cert_data = cert_client.review_cert(cert_id)
-    print('Serial Number: ' + cert_data.serial_number)
-    print('Issuer: ' + cert_data.issuer_dn)
-    print('Subject: ' + cert_data.subject_dn)
-    print('Status: ' + cert_data.status)
-    print('Nonce: ' + str(cert_data.nonce))
+    print(f'Serial Number: {cert_data.serial_number}')
+    print(f'Issuer: {cert_data.issuer_dn}')
+    print(f'Subject: {cert_data.subject_dn}')
+    print(f'Status: {cert_data.status}')
+    print(f'Nonce: {str(cert_data.nonce)}')
     print()
 
     # Revoke a certificate
@@ -1207,9 +1173,9 @@ def main():
 
     cert_request_info = cert_client.hold_cert(cert_data.serial_number,
                                               comments="Test revoking a cert")
-    print('Request ID: ' + cert_request_info.request_id)
-    print('Request Type: ' + cert_request_info.request_type)
-    print('Request Status: ' + cert_request_info.request_status)
+    print(f'Request ID: {cert_request_info.request_id}')
+    print(f'Request Type: {cert_request_info.request_type}')
+    print(f'Request Status: {cert_request_info.request_status}')
     print()
 
     # Un-revoke a certificate
@@ -1217,9 +1183,9 @@ def main():
     print('-------------------------')
 
     cert_request_info = cert_client.unrevoke_cert(cert_data.serial_number)
-    print('Request ID: ' + cert_request_info.request_id)
-    print('Request Type: ' + cert_request_info.request_type)
-    print('Request Status: ' + cert_request_info.request_status)
+    print(f'Request ID: {cert_request_info.request_id}')
+    print(f'Request Type: {cert_request_info.request_type}')
+    print(f'Request Status: {cert_request_info.request_status}')
     print()
 
 
